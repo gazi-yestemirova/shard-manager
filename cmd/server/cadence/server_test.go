@@ -36,18 +36,18 @@ import (
 	"go.uber.org/fx/fxtest"
 	"go.uber.org/mock/gomock"
 
-	"github.com/uber/cadence/common"
-	"github.com/uber/cadence/common/config"
-	"github.com/uber/cadence/common/dynamicconfig"
-	"github.com/uber/cadence/common/dynamicconfig/dynamicproperties"
-	"github.com/uber/cadence/common/log"
-	"github.com/uber/cadence/common/log/tag"
-	"github.com/uber/cadence/common/log/testlogger"
-	"github.com/uber/cadence/common/metrics"
-	pt "github.com/uber/cadence/common/persistence/persistence-tests"
-	"github.com/uber/cadence/common/persistence/sql/sqlplugin/sqlite"
-	"github.com/uber/cadence/common/resource"
-	"github.com/uber/cadence/common/service"
+	"github.com/cadence-workflow/shard-manager/common"
+	"github.com/cadence-workflow/shard-manager/common/config"
+	"github.com/cadence-workflow/shard-manager/common/dynamicconfig"
+	"github.com/cadence-workflow/shard-manager/common/dynamicconfig/dynamicproperties"
+	"github.com/cadence-workflow/shard-manager/common/log"
+	"github.com/cadence-workflow/shard-manager/common/log/tag"
+	"github.com/cadence-workflow/shard-manager/common/log/testlogger"
+	"github.com/cadence-workflow/shard-manager/common/metrics"
+	pt "github.com/cadence-workflow/shard-manager/common/persistence/persistence-tests"
+	"github.com/cadence-workflow/shard-manager/common/persistence/sql/sqlplugin/sqlite"
+	"github.com/cadence-workflow/shard-manager/common/resource"
+	"github.com/cadence-workflow/shard-manager/common/service"
 )
 
 type ServerSuite struct {
@@ -71,6 +71,8 @@ TestServerStartup tests the startup logic for the binary. When this fails, you s
 If you need to run locally, make sure Cassandra is up and schema is installed(run `make install-schema`)
 */
 func (s *ServerSuite) TestServerStartup() {
+	// TODO: Remove this test - shard-manager only uses ETCD, not SQLite/Cassandra
+	s.T().Skip("Skipping: shard-manager doesn't use SQL persistence, will be removed in future PR")
 	env := "development"
 	zone := ""
 	rootDir := "../../../"
