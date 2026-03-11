@@ -24,7 +24,10 @@ package rpc
 
 import (
 	"errors"
+	"fmt"
 	"net"
+
+	"github.com/cadence-workflow/shard-manager/common/config"
 )
 
 // scoreAddr scores how likely the given addr is to be a remote address and returns the
@@ -88,6 +91,30 @@ func ListenIP() (net.IP, error) {
 	}
 
 	return bestIP, nil
+}
+
+// GetListenIP returns the IP address to bind/listen on based on RPC config.
+// It respects bindOnLocalHost, bindOnIP, or falls back to auto-detection.
+func GetListenIP(cfg config.RPC) (net.IP, error) {
+	if cfg.BindOnLocalHost && len(cfg.BindOnIP) > 0 {
+		return nil, fmt.Errorf("bindOnLocalHost and bindOnIP are mutually exclusive")
+	}
+
+	if cfg.BindOnLocalHost {
+		return net.IPv4(127, 0, 0, 1), nil
+	}
+
+	if len(cfg.BindOnIP) > 0 {
+		ip := net.ParseIP(cfg.BindOnIP)
+		if ip != nil && ip.To4() != nil {
+			return ip.To4(), nil
+		}
+		if ip != nil && ip.To16() != nil {
+			return ip.To16(), nil
+		}
+		return nil, fmt.Errorf("unable to parse bindOnIP value or it is not an IPv4 or IPv6 address: %s", cfg.BindOnIP)
+	}
+	return ListenIP()
 }
 
 func mustParseMAC(s string) net.HardwareAddr {

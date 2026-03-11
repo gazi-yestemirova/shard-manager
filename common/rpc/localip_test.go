@@ -27,6 +27,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/cadence-workflow/shard-manager/common/config"
 )
 
 func TestScoreAddr(t *testing.T) {
@@ -100,5 +102,55 @@ func TestScoreAddr(t *testing.T) {
 		gotScore, gotIP := scoreAddr(tt.iface, tt.addr)
 		assert.Equal(t, tt.want, gotScore, tt.msg)
 		assert.Equal(t, tt.wantIP, gotIP, tt.msg)
+	}
+}
+
+func TestGetListenIP(t *testing.T) {
+	tests := []struct {
+		msg     string
+		cfg     config.RPC
+		wantIP  net.IP
+		wantErr string
+	}{
+		{
+			msg:    "bind on localhost",
+			cfg:    config.RPC{BindOnLocalHost: true},
+			wantIP: net.IPv4(127, 0, 0, 1),
+		},
+		{
+			msg:    "bind on specific IPv4",
+			cfg:    config.RPC{BindOnIP: "1.2.3.4"},
+			wantIP: net.ParseIP("1.2.3.4").To4(),
+		},
+		{
+			msg:     "mutually exclusive options",
+			cfg:     config.RPC{BindOnLocalHost: true, BindOnIP: "1.2.3.4"},
+			wantErr: "bindOnLocalHost and bindOnIP are mutually exclusive",
+		},
+		{
+			msg:     "invalid IP",
+			cfg:     config.RPC{BindOnIP: "invalidIP"},
+			wantErr: "unable to parse bindOnIP value or it is not an IPv4 or IPv6 address: invalidIP",
+		},
+		{
+			msg: "auto-detect fallback",
+			cfg: config.RPC{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			ip, err := GetListenIP(tt.cfg)
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			assert.NoError(t, err)
+			if tt.wantIP != nil {
+				assert.Equal(t, tt.wantIP, ip)
+			} else {
+				assert.NotNil(t, ip)
+			}
+		})
 	}
 }

@@ -142,7 +142,6 @@ var (
 	ComponentMapQ                             = component("mapq")
 	ComponentMapQTree                         = component("mapq-tree")
 	ComponentMapQTreeNode                     = component("mapq-tree-node")
-	ComponentRPCFactory                       = component("rpc-factory")
 	ComponentTaskListAdaptiveScaler           = component("task-list-adaptive-scaler")
 	ComponentActiveClusterManager             = component("active-cluster-manager")
 	ComponentMembershipResolver               = component("membership-resolver")
