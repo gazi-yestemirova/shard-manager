@@ -14,7 +14,6 @@ import (
 	"github.com/cadence-workflow/shard-manager/common/dynamicconfig"
 	"github.com/cadence-workflow/shard-manager/common/log/testlogger"
 	"github.com/cadence-workflow/shard-manager/common/metrics"
-	"github.com/cadence-workflow/shard-manager/common/rpc"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/config"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/store"
 )
@@ -28,11 +27,7 @@ func TestFxServiceStartStop(t *testing.T) {
 		testlogger.Module(t),
 		fx.Provide(
 			func() metrics.Client { return metrics.NewNoopMetricsClient() },
-			func() rpc.Factory {
-				factory := rpc.NewMockFactory(ctrl)
-				factory.EXPECT().GetDispatcher().Return(testDispatcher)
-				return factory
-			},
+			func() *yarpc.Dispatcher { return testDispatcher },
 			func() *dynamicconfig.Collection {
 				return dynamicconfig.NewNopCollection()
 			},

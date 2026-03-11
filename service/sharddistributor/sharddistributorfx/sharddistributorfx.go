@@ -24,11 +24,11 @@ package sharddistributorfx
 
 import (
 	"go.uber.org/fx"
+	"go.uber.org/yarpc"
 
 	"github.com/cadence-workflow/shard-manager/common/clock"
 	"github.com/cadence-workflow/shard-manager/common/log"
 	"github.com/cadence-workflow/shard-manager/common/metrics"
-	"github.com/cadence-workflow/shard-manager/common/rpc"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/config"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/handler"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/leader/election"
@@ -57,7 +57,7 @@ type registerHandlersParams struct {
 
 	Logger        log.Logger
 	MetricsClient metrics.Client
-	RPCFactory    rpc.Factory
+	Dispatcher    *yarpc.Dispatcher
 	Config        *config.Config
 
 	TimeSource clock.TimeSource
@@ -67,7 +67,7 @@ type registerHandlersParams struct {
 }
 
 func registerHandlers(params registerHandlersParams) error {
-	dispatcher := params.RPCFactory.GetDispatcher()
+	dispatcher := params.Dispatcher
 
 	rawHandler := handler.NewHandler(params.Logger, params.ShardDistributionCfg, params.Store)
 	wrappedHandler := metered.NewMetricsHandler(rawHandler, params.Logger, params.MetricsClient)

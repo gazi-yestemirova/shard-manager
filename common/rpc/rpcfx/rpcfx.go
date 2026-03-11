@@ -24,67 +24,81 @@ package rpcfx
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 
 	"go.uber.org/fx"
+	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/transport/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/cadence-workflow/shard-manager/common/config"
-	"github.com/cadence-workflow/shard-manager/common/dynamicconfig"
 	"github.com/cadence-workflow/shard-manager/common/log"
-	"github.com/cadence-workflow/shard-manager/common/metrics"
+	"github.com/cadence-workflow/shard-manager/common/log/tag"
 	"github.com/cadence-workflow/shard-manager/common/rpc"
 )
 
-// Module provides rpc.Params and rpc.Factory for fx application.
+// Module provides a *yarpc.Dispatcher for the fx application.
 var Module = fx.Module("rpcfx",
-	fx.Provide(paramsBuilder),
-	fx.Provide(buildFactory),
+	fx.Provide(buildDispatcher),
 )
 
-type paramsBuilderParams struct {
+type params struct {
 	fx.In
 
-	ServiceFullName   string `name:"service-full-name"`
-	Cfg               config.Config
-	Logger            log.Logger
-	DynamicCollection *dynamicconfig.Collection
-	MetricsClient     metrics.Client
+	ServiceFullName string `name:"service-full-name"`
+	Cfg             config.Config
+	Logger          log.Logger
+	Lifecycle       fx.Lifecycle
 }
 
-func paramsBuilder(p paramsBuilderParams) (rpc.Params, error) {
-	res, err := rpc.NewParams(p.ServiceFullName, &p.Cfg, p.DynamicCollection, p.Logger, p.MetricsClient)
+func buildDispatcher(p params) (dispatcher *yarpc.Dispatcher, retErr error) {
+	rpcCfg := p.Cfg.RPC
+
+	listenIP, err := rpc.GetListenIP(rpcCfg)
 	if err != nil {
-		return rpc.Params{}, fmt.Errorf("create rpc params: %w", err)
+		return nil, fmt.Errorf("get listen IP: %w", err)
 	}
-	return res, nil
-}
 
-type factoryParams struct {
-	fx.In
+	grpcAddress := net.JoinHostPort(listenIP.String(), strconv.Itoa(int(rpcCfg.GRPCPort)))
 
-	Logger    log.Logger
-	RPCParams rpc.Params
-
-	Lifecycle fx.Lifecycle
-}
-
-func buildFactory(p factoryParams) rpc.Factory {
-	res := rpc.NewFactory(p.Logger, p.RPCParams)
-	p.Lifecycle.Append(fx.StartStopHook(startDispatcher(res), rpcStopper(res)))
-	return res
-}
-
-func startDispatcher(f rpc.Factory) func() error {
-	return func() error {
-		return f.GetDispatcher().Start()
+	var transportOptions []grpc.TransportOption
+	if rpcCfg.GRPCMaxMsgSize > 0 {
+		transportOptions = append(transportOptions,
+			grpc.ServerMaxRecvMsgSize(rpcCfg.GRPCMaxMsgSize),
+			grpc.ClientMaxRecvMsgSize(rpcCfg.GRPCMaxMsgSize),
+		)
 	}
-}
+	grpcTransport := grpc.NewTransport(transportOptions...)
 
-func rpcStopper(factory rpc.Factory) func() error {
-	return func() error {
-		err := factory.GetDispatcher().Stop()
-		if err != nil {
-			return fmt.Errorf("dispatcher stop: %w", err)
+	listener, err := net.Listen("tcp", grpcAddress)
+	if err != nil {
+		return nil, fmt.Errorf("listen on gRPC port %s: %w", grpcAddress, err)
+	}
+	defer func() {
+		if retErr != nil {
+			_ = listener.Close()
 		}
-		return nil
+	}()
+
+	var inboundOptions []grpc.InboundOption
+	inboundTLS, err := rpcCfg.TLS.ToTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("inbound TLS config: %w", err)
 	}
+	if inboundTLS != nil {
+		inboundOptions = append(inboundOptions, grpc.InboundCredentials(credentials.NewTLS(inboundTLS)))
+	}
+
+	inbound := grpcTransport.NewInbound(listener, inboundOptions...)
+	p.Logger.Info("Listening for gRPC requests", tag.Address(grpcAddress))
+
+	dispatcher = yarpc.NewDispatcher(yarpc.Config{
+		Name:     p.ServiceFullName,
+		Inbounds: yarpc.Inbounds{inbound},
+	})
+
+	p.Lifecycle.Append(fx.StartStopHook(dispatcher.Start, dispatcher.Stop))
+
+	return dispatcher, nil
 }
