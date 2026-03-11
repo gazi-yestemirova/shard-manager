@@ -52,7 +52,7 @@ type params struct {
 	Lifecycle       fx.Lifecycle
 }
 
-func buildDispatcher(p params) (*yarpc.Dispatcher, error) {
+func buildDispatcher(p params) (dispatcher *yarpc.Dispatcher, retErr error) {
 	rpcCfg := p.Cfg.RPC
 
 	listenIP, err := rpc.GetListenIP(rpcCfg)
@@ -75,6 +75,11 @@ func buildDispatcher(p params) (*yarpc.Dispatcher, error) {
 	if err != nil {
 		return nil, fmt.Errorf("listen on gRPC port %s: %w", grpcAddress, err)
 	}
+	defer func() {
+		if retErr != nil {
+			_ = listener.Close()
+		}
+	}()
 
 	var inboundOptions []grpc.InboundOption
 	inboundTLS, err := rpcCfg.TLS.ToTLSConfig()
@@ -88,7 +93,7 @@ func buildDispatcher(p params) (*yarpc.Dispatcher, error) {
 	inbound := grpcTransport.NewInbound(listener, inboundOptions...)
 	p.Logger.Info("Listening for gRPC requests", tag.Address(grpcAddress))
 
-	dispatcher := yarpc.NewDispatcher(yarpc.Config{
+	dispatcher = yarpc.NewDispatcher(yarpc.Config{
 		Name:     p.ServiceFullName,
 		Inbounds: yarpc.Inbounds{inbound},
 	})
