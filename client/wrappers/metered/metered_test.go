@@ -42,7 +42,7 @@ func TestShardDistributorWrappers(t *testing.T) {
 		clientMock := sharddistributor.NewMockClient(ctrl)
 
 		testScope := tally.NewTestScope("", nil)
-		metricsClient := metrics.NewClient(testScope, metrics.ServiceIdx(0), metrics.HistogramMigration{})
+		metricsClient := metrics.NewClient(testScope, metrics.ServiceIdx(0), metrics.MigrationConfig{})
 
 		clientMock.EXPECT().GetShardOwner(gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(&types.GetShardOwnerResponse{}, nil).Times(1)
@@ -61,7 +61,7 @@ func TestShardDistributorWrappers(t *testing.T) {
 		clientMock := sharddistributor.NewMockClient(ctrl)
 
 		testScope := tally.NewTestScope("", nil)
-		metricsClient := metrics.NewClient(testScope, metrics.ServiceIdx(0), metrics.HistogramMigration{})
+		metricsClient := metrics.NewClient(testScope, metrics.ServiceIdx(0), metrics.MigrationConfig{})
 
 		clientMock.EXPECT().GetShardOwner(gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(nil, errors.New("error"))

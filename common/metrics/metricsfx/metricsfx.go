@@ -45,7 +45,7 @@ type clientParams struct {
 
 	Logger       log.Logger
 	SvcCfg       config.Service
-	HistogramCfg metrics.HistogramMigration
+	MigrationCfg metrics.MigrationConfig
 }
 
 type clientResult struct {
@@ -59,10 +59,10 @@ func buildClient(params clientParams) clientResult {
 	scope := params.SvcCfg.Metrics.NewScope(params.Logger, service.ShardDistributor)
 	return clientResult{
 		Scope:  scope,
-		Client: metrics.NewClient(scope, metrics.ShardDistributor, params.HistogramCfg),
+		Client: metrics.NewClient(scope, metrics.ShardDistributor, params.MigrationCfg),
 	}
 }
 
-func buildClientFromTally(scope tally.Scope, hm metrics.HistogramMigration) metrics.Client {
-	return metrics.NewClient(scope, metrics.ShardDistributor, hm)
+func buildClientFromTally(scope tally.Scope, migrationCfg metrics.MigrationConfig) metrics.Client {
+	return metrics.NewClient(scope, metrics.ShardDistributor, migrationCfg)
 }
