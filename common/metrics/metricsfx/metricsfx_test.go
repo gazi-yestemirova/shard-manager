@@ -18,7 +18,7 @@ func TestModule(t *testing.T) {
 		fx.Provide(func() config.Service {
 			return config.Service{}
 		}),
-		fx.Provide(func() metrics.HistogramMigration { return metrics.HistogramMigration{} }),
+		fx.Provide(func() metrics.MigrationConfig { return metrics.MigrationConfig{} }),
 		Module,
 		fx.Invoke(func(mc metrics.Client) {}))
 	fxApp.RequireStart().RequireStop()
@@ -28,7 +28,7 @@ func TestModuleWithExternalScope(t *testing.T) {
 	fxApp := fxtest.New(t,
 		testlogger.Module(t),
 		fx.Provide(func() tally.Scope { return tally.NoopScope }),
-		fx.Provide(func() metrics.HistogramMigration { return metrics.HistogramMigration{} }),
+		fx.Provide(func() metrics.MigrationConfig { return metrics.MigrationConfig{} }),
 		ModuleForExternalScope,
 		fx.Invoke(func(mc metrics.Client) {}))
 	fxApp.RequireStart().RequireStop()
