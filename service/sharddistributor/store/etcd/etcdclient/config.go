@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/uber/cadence/service/sharddistributor/config"
+	"github.com/cadence-workflow/shard-manager/service/sharddistributor/config"
 )
 
 // BaseConfig has common ETCD connection and store settings.

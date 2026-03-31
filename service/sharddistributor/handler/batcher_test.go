@@ -33,8 +33,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
-	"github.com/uber/cadence/common/clock"
-	"github.com/uber/cadence/common/types"
+	"github.com/cadence-workflow/shard-manager/common/clock"
+	"github.com/cadence-workflow/shard-manager/common/types"
 )
 
 // processFnFromMap returns an ephemeralAssignmentBatchFn that resolves shard keys from a

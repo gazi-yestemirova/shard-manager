@@ -23,7 +23,7 @@ package executorclient
 import (
 	"context"
 
-	"github.com/uber/cadence/common/types"
+	"github.com/cadence-workflow/shard-manager/common/types"
 )
 
 // noopExecutor is an Executor implementation used when no shard-distributor
