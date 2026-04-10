@@ -278,15 +278,6 @@ $(STABLE_BIN)/$(PROTOC_VERSION_BIN): | $(STABLE_BIN)
 # Codegen targets
 # ====================================
 
-# IDL submodule must be populated, or files will not exist -> prerequisites will be wrong -> build will fail.
-# Because it must exist before the makefile is parsed, this cannot be done automatically as part of a build.
-# Instead: call this func in targets that require the submodule to exist, so that target will not be built.
-#
-# THRIFT_FILES is just an easy identifier for "the submodule has files", others would work fine as well.
-define ensure_idl_submodule
-$(if $(THRIFT_FILES),,$(error idls/ submodule must exist, or build will fail.  Run `git submodule update --init` and try again))
-endef
-
 # codegen is done when protoc is done
 $(BUILD)/codegen: $(BUILD)/protoc | $(BUILD)
 	$Q touch $@
@@ -302,7 +293,6 @@ PROTO_DIRS = $(sort $(dir $(PROTO_FILES)))
 #
 # After compilation files are moved to final location, as plugins adds additional path based on proto package.
 $(BUILD)/protoc: $(PROTO_FILES) $(STABLE_BIN)/$(PROTOC_VERSION_BIN) $(BIN)/protoc-gen-gogofast $(BIN)/protoc-gen-yarpc-go | $(BUILD)
-	$(call ensure_idl_submodule)
 	$Q mkdir -p $(PROTO_OUT)
 	$Q echo "protoc..."
 	$Q chmod +x $(STABLE_BIN)/$(PROTOC_VERSION_BIN)
