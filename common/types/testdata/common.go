@@ -328,17 +328,6 @@ var (
 		CurrentVersionHistoryIndex: 1,
 		Histories:                  VersionHistoryArray,
 	}
-	TransientDecisionInfo = types.TransientDecisionInfo{
-		ScheduledEvent: &HistoryEvent_WorkflowExecutionStarted,
-		StartedEvent:   &HistoryEvent_WorkflowExecutionStarted,
-	}
-	FailoverMarkerToken = types.FailoverMarkerToken{
-		ShardIDs:       []int32{ShardID},
-		FailoverMarker: &FailoverMarkerAttributes,
-	}
-	FailoverMarkerTokenArray = []*types.FailoverMarkerToken{
-		&FailoverMarkerToken,
-	}
 	WorkflowExecutionFilter = types.WorkflowExecutionFilter{
 		WorkflowID: WorkflowID,
 		RunID:      RunID,
