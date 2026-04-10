@@ -56,7 +56,7 @@ func Module(serviceName string) fx.Option {
 	}
 	return fx.Options(
 		fx.Supply(serviceContext{
-			FullName: service.FullName(serviceName),
+			FullName: service.ShardDistributor,
 		}),
 		fx.Provide(func(cfg config.Config) shardDistributorCfg.ShardDistribution {
 			return cfg.ShardDistribution

@@ -22,10 +22,6 @@ package common
 
 import (
 	"time"
-
-	"go.uber.org/cadence/.gen/go/shared"
-
-	s "github.com/cadence-workflow/shard-manager/.gen/go/shared"
 )
 
 // Returns a pointer to the given value.
@@ -93,101 +89,6 @@ func TimePtr(v time.Time) *time.Time {
 // DurationPtr makes a copy and returns the pointer to a duration
 func DurationPtr(v time.Duration) *time.Duration {
 	return &v
-}
-
-// TaskListPtr makes a copy and returns the pointer to a TaskList.
-func TaskListPtr(v s.TaskList) *s.TaskList {
-	return &v
-}
-
-// ActivityTypePtr makes a copy and returns the pointer to a ActivityType.
-func ActivityTypePtr(v s.ActivityType) *s.ActivityType {
-	return &v
-}
-
-// DecisionTypePtr makes a copy and returns the pointer to a DecisionType.
-func DecisionTypePtr(t s.DecisionType) *s.DecisionType {
-	return &t
-}
-
-// ParentClosePolicyPtr makes a copy and returns the pointer to a DecisionType.
-func ParentClosePolicyPtr(t s.ParentClosePolicy) *s.ParentClosePolicy {
-	return &t
-}
-
-// EventTypePtr makes a copy and returns the pointer to a EventType.
-func EventTypePtr(t s.EventType) *s.EventType {
-	return &t
-}
-
-// WorkflowTypePtr makes a copy and returns the pointer to a WorkflowType.
-func WorkflowTypePtr(t s.WorkflowType) *s.WorkflowType {
-	return &t
-}
-
-// TimeoutTypePtr makes a copy and returns the pointer to a TimeoutType.
-func TimeoutTypePtr(t s.TimeoutType) *s.TimeoutType {
-	return &t
-}
-
-// TaskListKindPtr makes a copy and returns the pointer to a TaskListKind.
-func TaskListKindPtr(t s.TaskListKind) *s.TaskListKind {
-	return &t
-}
-
-// TaskListTypePtr makes a copy and returns the pointer to a TaskListKind.
-func TaskListTypePtr(t s.TaskListType) *s.TaskListType {
-	return &t
-}
-
-// DecisionTaskFailedCausePtr makes a copy and returns the pointer to a DecisionTaskFailedCause.
-func DecisionTaskFailedCausePtr(t s.DecisionTaskFailedCause) *s.DecisionTaskFailedCause {
-	return &t
-}
-
-// CancelExternalWorkflowExecutionFailedCausePtr makes a copy and returns the pointer to a CancelExternalWorkflowExecutionFailedCause.
-func CancelExternalWorkflowExecutionFailedCausePtr(t s.CancelExternalWorkflowExecutionFailedCause) *s.CancelExternalWorkflowExecutionFailedCause {
-	return &t
-}
-
-// SignalExternalWorkflowExecutionFailedCausePtr makes a copy and returns the pointer to a SignalExternalWorkflowExecutionFailedCause.
-func SignalExternalWorkflowExecutionFailedCausePtr(t s.SignalExternalWorkflowExecutionFailedCause) *s.SignalExternalWorkflowExecutionFailedCause {
-	return &t
-}
-
-// ChildWorkflowExecutionFailedCausePtr makes a copy and returns the pointer to a ChildWorkflowExecutionFailedCause.
-func ChildWorkflowExecutionFailedCausePtr(t s.ChildWorkflowExecutionFailedCause) *s.ChildWorkflowExecutionFailedCause {
-	return &t
-}
-
-// ArchivalStatusPtr makes a copy and returns the pointer to an ArchivalStatus.
-func ArchivalStatusPtr(t s.ArchivalStatus) *s.ArchivalStatus {
-	return &t
-}
-
-// ClientArchivalStatusPtr makes a copy and returns the pointer to a client ArchivalStatus.
-func ClientArchivalStatusPtr(t shared.ArchivalStatus) *shared.ArchivalStatus {
-	return &t
-}
-
-// QueryResultTypePtr makes a copy and returns the pointer to a QueryResultType
-func QueryResultTypePtr(t s.QueryResultType) *s.QueryResultType {
-	return &t
-}
-
-// QueryRejectConditionPtr makes a copy and returns the pointer to a QueryRejectCondition
-func QueryRejectConditionPtr(t s.QueryRejectCondition) *s.QueryRejectCondition {
-	return &t
-}
-
-// QueryConsistencyLevelPtr makes a copy and returns the pointer to a QueryConsistencyLevel
-func QueryConsistencyLevelPtr(t s.QueryConsistencyLevel) *s.QueryConsistencyLevel {
-	return &t
-}
-
-// QueryTaskCompletedTypePtr makes a copy and returns the pointer to a QueryTaskCompletedType
-func QueryTaskCompletedTypePtr(t s.QueryTaskCompletedType) *s.QueryTaskCompletedType {
-	return &t
 }
 
 // StringDefault returns value if string pointer is set otherwise default value of string

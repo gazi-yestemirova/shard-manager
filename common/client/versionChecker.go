@@ -24,6 +24,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/gogo/protobuf/jsonpb"
@@ -31,7 +32,6 @@ import (
 	apiv1 "github.com/uber/cadence-idl/go/proto/api/v1"
 	"go.uber.org/yarpc"
 
-	"github.com/cadence-workflow/shard-manager/.gen/go/shared"
 	"github.com/cadence-workflow/shard-manager/common"
 	"github.com/cadence-workflow/shard-manager/common/types"
 )
@@ -218,7 +218,7 @@ func (vc *versionChecker) SupportsWorkflowAlreadyCompletedError(clientImpl strin
 	if featureFlags.WorkflowExecutionAlreadyCompletedErrorEnabled {
 		return vc.featureSupported(clientImpl, clientFeatureVersion, workflowAlreadyCompletedError)
 	}
-	return &shared.FeatureNotEnabledError{FeatureFlag: "WorkflowExecutionAlreadyCompletedErrorEnabled"}
+	return errors.New("feature flag WorkflowExecutionAlreadyCompletedErrorEnabled is not enabled")
 }
 
 func (vc *versionChecker) featureSupported(clientImpl string, clientFeatureVersion string, feature string) error {

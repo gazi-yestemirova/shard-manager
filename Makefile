@@ -64,8 +64,7 @@ $(BUILD)/goversion-lint:
 $(BUILD)/fmt: $(BUILD)/codegen # formatting must occur only after all other go-file-modifications are done
 # $(BUILD)/copyright
 # $(BUILD)/copyright: $(BUILD)/codegen # must add copyright to generated code, sometimes needs re-formatting
-$(BUILD)/codegen: $(BUILD)/thrift $(BUILD)/protoc
-$(BUILD)/thrift: $(BUILD)/go_mod_check
+$(BUILD)/codegen: $(BUILD)/protoc
 $(BUILD)/protoc: $(BUILD)/go_mod_check
 $(BUILD)/go_mod_check:
 
@@ -176,12 +175,6 @@ endef
 $(BIN) $(BUILD) $(STABLE_BIN):
 	$Q mkdir -p $@
 
-$(BIN)/thriftrw: go.mod go.work
-	$(call go_mod_build_tool,go.uber.org/thriftrw)
-
-$(BIN)/thriftrw-plugin-yarpc: go.mod go.work
-	$(call go_mod_build_tool,go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc)
-
 $(BIN)/mockgen: internal/tools/go.mod go.work
 	$(call go_build_tool,go.uber.org/mock/mockgen)
 
@@ -285,48 +278,14 @@ $(STABLE_BIN)/$(PROTOC_VERSION_BIN): | $(STABLE_BIN)
 # Codegen targets
 # ====================================
 
-# IDL submodule must be populated, or files will not exist -> prerequisites will be wrong -> build will fail.
-# Because it must exist before the makefile is parsed, this cannot be done automatically as part of a build.
-# Instead: call this func in targets that require the submodule to exist, so that target will not be built.
-#
-# THRIFT_FILES is just an easy identifier for "the submodule has files", others would work fine as well.
-define ensure_idl_submodule
-$(if $(THRIFT_FILES),,$(error idls/ submodule must exist, or build will fail.  Run `git submodule update --init` and try again))
-endef
-
-# codegen is done when thrift and protoc are done
-$(BUILD)/codegen: $(BUILD)/thrift $(BUILD)/protoc | $(BUILD)
-	$Q touch $@
-
-THRIFT_FILES := $(shell find idls -name '*.thrift')
-# book-keeping targets to build.  one per thrift file.
-# idls/thrift/thing.thrift -> .build/thing.thrift
-# the reverse is done in the recipe.
-THRIFT_GEN := $(subst idls/thrift/,.build/,$(THRIFT_FILES))
-
-# thrift is done when all sub-thrifts are done
-$(BUILD)/thrift: $(THRIFT_GEN) | $(BUILD)
-	$(call ensure_idl_submodule)
-	$Q touch $@
-
-# how to generate each thrift book-keeping file.
-#
-# note that each generated file depends on ALL thrift files - this is necessary because they can import each other.
-# as --no-recurse is specified, these can be done in parallel, since output files will not overwrite each other.
-$(THRIFT_GEN): $(THRIFT_FILES) $(BIN)/thriftrw $(BIN)/thriftrw-plugin-yarpc | $(BUILD)
-	$Q echo 'thriftrw for $(subst .build/,idls/thrift/,$@)...'
-	$Q $(BIN_PATH) $(BIN)/thriftrw \
-		--plugin=yarpc \
-		--pkg-prefix=$(PROJECT_ROOT)/.gen/go \
-		--out=.gen/go \
-		--no-recurse \
-		$(subst .build/,idls/thrift/,$@)
+# codegen is done when protoc is done
+$(BUILD)/codegen: $(BUILD)/protoc | $(BUILD)
 	$Q touch $@
 
 PROTO_ROOT := proto
 # output location is defined by `option go_package` in the proto files, all must stay in sync with this
 PROTO_OUT := .gen/proto
-PROTO_FILES = $(shell find -L ./$(PROTO_ROOT) -name "*.proto" | grep -v "persistenceblobs" | grep -v public)
+PROTO_FILES = $(shell find -L ./$(PROTO_ROOT) -name "*.proto" | grep -v public)
 PROTO_DIRS = $(sort $(dir $(PROTO_FILES)))
 
 # protoc splits proto files into directories, otherwise protoc-gen-gogofast is complaining about inconsistent package
@@ -334,7 +293,6 @@ PROTO_DIRS = $(sort $(dir $(PROTO_FILES)))
 #
 # After compilation files are moved to final location, as plugins adds additional path based on proto package.
 $(BUILD)/protoc: $(PROTO_FILES) $(STABLE_BIN)/$(PROTOC_VERSION_BIN) $(BIN)/protoc-gen-gogofast $(BIN)/protoc-gen-yarpc-go | $(BUILD)
-	$(call ensure_idl_submodule)
 	$Q mkdir -p $(PROTO_OUT)
 	$Q echo "protoc..."
 	$Q chmod +x $(STABLE_BIN)/$(PROTOC_VERSION_BIN)
