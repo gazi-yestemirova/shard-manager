@@ -11,9 +11,9 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/uber/cadence/common/clock"
-	"github.com/uber/cadence/service/sharddistributor/canary/latencykind"
-	canarymetrics "github.com/uber/cadence/service/sharddistributor/canary/metrics"
+	"github.com/cadence-workflow/shard-manager/common/clock"
+	"github.com/cadence-workflow/shard-manager/service/sharddistributor/canary/latencykind"
+	canarymetrics "github.com/cadence-workflow/shard-manager/service/sharddistributor/canary/metrics"
 )
 
 // Lifecycler is the minimal Start/Stop surface AssertInjectsLifecycleDelay
