@@ -2609,19 +2609,6 @@ const (
 	// Note: not currently used in open-source
 	EnableAdminAuthorization
 
-	// MatchingShardDistributionMode is the mode of shard distribution for matching, we currently have four modes, we _highly_
-	// recommend using hash_ring while the shard distributor is still in development.
-	//
-	// - "hash_ring" means that the shards are distributed using a consistent hash ring, in particular using the ringpop library
-	// - "shard_distributor" means that the shards are distributed using the _highly experimental_ shard distributor service
-	// - "hash_ring-shadow-shard_distributor" means that the shards are distrubuted using the hash ring, but shadowed by the shard distributor
-	// - "shard_distributor-shadow-hash_ring" means that the shards are distrubuted using the shard distributor, but shadowed by the hash ring
-	//
-	// KeyName: matching.shardDistributionMode
-	// Value type: string enum: "hash_ring" or "shard_distributor"
-	// Default value: "hash_ring"
-	MatchingShardDistributionMode
-
 	// SerializationEncoding is the encoding type for blobs
 	// KeyName: history.serializationEncoding
 	// Value type: String
@@ -2632,8 +2619,6 @@ const (
 	//
 	// "invalid" invalid mode for the migration, not expected to be used
 	// "local_pass" the executor library is integrated but no external call to the SD happening
-	// "local_pass_shadow" heartbeat calls to the SD to update the sharding state in SD
-	// "distributed_pass" the local sharding mechanism is sent to SD, returned by SD and applied in the onboarded service
 	// "onboarded" the sharding logic in SD is used
 	//
 	// KeyName: shardDistributor.migrationMode
@@ -5235,11 +5220,6 @@ var StringKeys = map[StringKey]DynamicString{
 		Description:  "ReadVisibilityStoreName is key to identify which store to read visibility data from",
 		DefaultValue: "es",
 		Filters:      []Filter{DomainName},
-	},
-	MatchingShardDistributionMode: {
-		KeyName:      "matching.shardDistributionMode",
-		Description:  "MatchingShardDistributionMode defines which shard distribution mode should be used",
-		DefaultValue: "hash_ring",
 	},
 	SerializationEncoding: {
 		KeyName:      "history.serializationEncoding",

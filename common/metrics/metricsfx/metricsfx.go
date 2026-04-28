@@ -64,5 +64,9 @@ func buildClient(params clientParams) clientResult {
 }
 
 func buildClientFromTally(scope tally.Scope, migrationCfg metrics.MigrationConfig) metrics.Client {
+	// Ensure external scope path emits with the expected service tag.
+	scope = scope.Tagged(map[string]string{
+		"service": service.ShardDistributor,
+	})
 	return metrics.NewClient(scope, metrics.ShardDistributor, migrationCfg)
 }
