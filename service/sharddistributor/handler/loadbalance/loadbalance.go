@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/uber/cadence/common/types"
-	"github.com/uber/cadence/service/sharddistributor/store"
+	"github.com/cadence-workflow/shard-manager/common/types"
+	"github.com/cadence-workflow/shard-manager/service/sharddistributor/store"
 )
 
 // ErrNoActiveExecutors is returned by Pick when no ACTIVE executors are
