@@ -43,6 +43,23 @@ func (c *meteredShardDistributorClient) GetShardOwner(ctx context.Context, reque
 	return response, err
 }
 
+func (c *meteredShardDistributorClient) GetNamespaceState(ctx context.Context, request *types.GetNamespaceStateRequest, opts ...yarpc.CallOption) (*types.GetNamespaceStateResponse, error) {
+	scope := c.metricsScope.Tagged(map[string]string{
+		metrics.OperationTagName: metricsconstants.ShardDistributorSpectatorGetNamespaceStateOperationTagName,
+	})
+
+	scope.Counter(metricsconstants.ShardDistributorSpectatorClientRequests).Inc(1)
+
+	sw := scope.Timer(metricsconstants.ShardDistributorSpectatorClientLatency).Start()
+	response, err := c.client.GetNamespaceState(ctx, request, opts...)
+	sw.Stop()
+
+	if err != nil {
+		scope.Counter(metricsconstants.ShardDistributorSpectatorClientFailures).Inc(1)
+	}
+	return response, err
+}
+
 func (c *meteredShardDistributorClient) WatchNamespaceState(ctx context.Context, request *types.WatchNamespaceStateRequest, opts ...yarpc.CallOption) (sharddistributor.WatchNamespaceStateClient, error) {
 	scope := c.metricsScope.Tagged(map[string]string{
 		metrics.OperationTagName: metricsconstants.ShardDistributorSpectatorWatchNamespaceStateOperationTagName,

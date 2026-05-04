@@ -349,3 +349,147 @@ func ToShardDistributorWatchNamespaceStateResponse(t *sharddistributorv1.WatchNa
 		Executors: executors,
 	}
 }
+
+// FromShardDistributorGetNamespaceStateRequest converts a types.GetNamespaceStateRequest to a sharddistributor GetNamespaceStateRequest.
+func FromShardDistributorGetNamespaceStateRequest(t *types.GetNamespaceStateRequest) *sharddistributorv1.GetNamespaceStateRequest {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.GetNamespaceStateRequest{
+		Namespace: t.GetNamespace(),
+	}
+}
+
+// ToShardDistributorGetNamespaceStateRequest converts a sharddistributor GetNamespaceStateRequest to a types.GetNamespaceStateRequest.
+func ToShardDistributorGetNamespaceStateRequest(t *sharddistributorv1.GetNamespaceStateRequest) *types.GetNamespaceStateRequest {
+	if t == nil {
+		return nil
+	}
+	return &types.GetNamespaceStateRequest{
+		Namespace: t.GetNamespace(),
+	}
+}
+
+// FromShardDistributorGetNamespaceStateResponse converts a types.GetNamespaceStateResponse to a sharddistributor GetNamespaceStateResponse.
+func FromShardDistributorGetNamespaceStateResponse(t *types.GetNamespaceStateResponse) *sharddistributorv1.GetNamespaceStateResponse {
+	if t == nil {
+		return nil
+	}
+
+	var executors []*sharddistributorv1.NamespaceExecutorState
+	if t.GetExecutors() != nil {
+		executors = make([]*sharddistributorv1.NamespaceExecutorState, 0, len(t.GetExecutors()))
+		for _, ex := range t.GetExecutors() {
+			var status sharddistributorv1.ExecutorStatus
+			switch ex.GetStatus() {
+			case types.ExecutorStatusINVALID:
+				status = sharddistributorv1.ExecutorStatus_EXECUTOR_STATUS_INVALID
+			case types.ExecutorStatusACTIVE:
+				status = sharddistributorv1.ExecutorStatus_EXECUTOR_STATUS_ACTIVE
+			case types.ExecutorStatusDRAINING:
+				status = sharddistributorv1.ExecutorStatus_EXECUTOR_STATUS_DRAINING
+			case types.ExecutorStatusDRAINED:
+				status = sharddistributorv1.ExecutorStatus_EXECUTOR_STATUS_DRAINED
+			default:
+				status = sharddistributorv1.ExecutorStatus_EXECUTOR_STATUS_INVALID
+			}
+
+			var assigned []*sharddistributorv1.AssignedShardState
+			if ex.GetAssignedShards() != nil {
+				assigned = make([]*sharddistributorv1.AssignedShardState, 0, len(ex.GetAssignedShards()))
+				for _, sh := range ex.GetAssignedShards() {
+					var as sharddistributorv1.AssignmentStatus
+					switch sh.GetAssignmentStatus() {
+					case types.AssignmentStatusINVALID:
+						as = sharddistributorv1.AssignmentStatus_ASSIGNMENT_STATUS_INVALID
+					case types.AssignmentStatusREADY:
+						as = sharddistributorv1.AssignmentStatus_ASSIGNMENT_STATUS_READY
+					default:
+						as = sharddistributorv1.AssignmentStatus_ASSIGNMENT_STATUS_INVALID
+					}
+					assigned = append(assigned, &sharddistributorv1.AssignedShardState{
+						ShardKey:                 sh.GetShardKey(),
+						AssignmentStatus:         as,
+						AssignedStateModRevision: sh.GetAssignedStateModRevision(),
+					})
+				}
+			}
+
+			lastHB := ex.GetLastHeartbeat()
+			executors = append(executors, &sharddistributorv1.NamespaceExecutorState{
+				ExecutorId:     ex.GetExecutorID(),
+				Status:         status,
+				LastHeartbeat:  timeToTimestamp(&lastHB),
+				Metadata:       ex.GetMetadata(),
+				AssignedShards: assigned,
+			})
+		}
+	}
+
+	return &sharddistributorv1.GetNamespaceStateResponse{
+		Namespace: t.GetNamespace(),
+		Executors: executors,
+	}
+}
+
+// ToShardDistributorGetNamespaceStateResponse converts a sharddistributor GetNamespaceStateResponse to a types.GetNamespaceStateResponse.
+func ToShardDistributorGetNamespaceStateResponse(t *sharddistributorv1.GetNamespaceStateResponse) *types.GetNamespaceStateResponse {
+	if t == nil {
+		return nil
+	}
+
+	var executors []*types.NamespaceExecutorState
+	if t.GetExecutors() != nil {
+		executors = make([]*types.NamespaceExecutorState, 0, len(t.GetExecutors()))
+		for _, ex := range t.GetExecutors() {
+			var status types.ExecutorStatus
+			switch ex.GetStatus() {
+			case sharddistributorv1.ExecutorStatus_EXECUTOR_STATUS_INVALID:
+				status = types.ExecutorStatusINVALID
+			case sharddistributorv1.ExecutorStatus_EXECUTOR_STATUS_ACTIVE:
+				status = types.ExecutorStatusACTIVE
+			case sharddistributorv1.ExecutorStatus_EXECUTOR_STATUS_DRAINING:
+				status = types.ExecutorStatusDRAINING
+			case sharddistributorv1.ExecutorStatus_EXECUTOR_STATUS_DRAINED:
+				status = types.ExecutorStatusDRAINED
+			default:
+				status = types.ExecutorStatusINVALID
+			}
+
+			var assigned []*types.ExecutorAssignedShardState
+			if ex.GetAssignedShards() != nil {
+				assigned = make([]*types.ExecutorAssignedShardState, 0, len(ex.GetAssignedShards()))
+				for _, sh := range ex.GetAssignedShards() {
+					var as types.AssignmentStatus
+					switch sh.GetAssignmentStatus() {
+					case sharddistributorv1.AssignmentStatus_ASSIGNMENT_STATUS_INVALID:
+						as = types.AssignmentStatusINVALID
+					case sharddistributorv1.AssignmentStatus_ASSIGNMENT_STATUS_READY:
+						as = types.AssignmentStatusREADY
+					default:
+						as = types.AssignmentStatusINVALID
+					}
+					assigned = append(assigned, &types.ExecutorAssignedShardState{
+						ShardKey:                 sh.GetShardKey(),
+						AssignmentStatus:         as,
+						AssignedStateModRevision: sh.GetAssignedStateModRevision(),
+					})
+				}
+			}
+
+			lastHB := timestampToTimeVal(ex.GetLastHeartbeat())
+			executors = append(executors, &types.NamespaceExecutorState{
+				ExecutorID:     ex.GetExecutorId(),
+				Status:         status,
+				LastHeartbeat:  lastHB,
+				Metadata:       ex.GetMetadata(),
+				AssignedShards: assigned,
+			})
+		}
+	}
+
+	return &types.GetNamespaceStateResponse{
+		Namespace: t.GetNamespace(),
+		Executors: executors,
+	}
+}

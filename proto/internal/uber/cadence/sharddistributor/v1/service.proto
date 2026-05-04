@@ -33,6 +33,9 @@ service ShardDistributorAPI {
   // GetShardOwner returns the owner of a specific shard
   rpc GetShardOwner(GetShardOwnerRequest) returns (GetShardOwnerResponse);
 
+  // GetNamespaceState returns a snapshot of all executors in a namespace and their assigned shards
+  rpc GetNamespaceState(GetNamespaceStateRequest) returns (GetNamespaceStateResponse);
+
   // WatchNamespaceState streams updates about executors and their assigned shards for a namespace
   rpc WatchNamespaceState(WatchNamespaceStateRequest) returns (stream WatchNamespaceStateResponse);
 }

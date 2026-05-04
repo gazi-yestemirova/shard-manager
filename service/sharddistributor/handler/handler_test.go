@@ -329,3 +329,40 @@ func TestWatchNamespaceState(t *testing.T) {
 	require.Error(t, err)
 	require.ErrorIs(t, err, context.Canceled)
 }
+
+func TestGetNamespaceState(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
+		},
+	}
+
+	tests := []struct {
+		name            string
+		request         *types.GetNamespaceStateRequest
+		wantErrContains string
+	}{
+		{
+			name:            "unknown_namespace",
+			request:         &types.GetNamespaceStateRequest{Namespace: "missing"},
+			wantErrContains: "namespace not found",
+		},
+		{
+			name:            "stub_not_implemented",
+			request:         &types.GetNamespaceStateRequest{Namespace: _testNamespaceFixed},
+			wantErrContains: "not implemented yet",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockStorage := store.NewMockStore(ctrl)
+			h := newTestHandler(t, cfg, mockStorage)
+			resp, err := h.GetNamespaceState(context.Background(), tt.request)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tt.wantErrContains)
+			require.Nil(t, resp)
+		})
+	}
+}

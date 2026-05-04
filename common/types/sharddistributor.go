@@ -24,6 +24,7 @@ package types
 
 import (
 	"fmt"
+	"time"
 )
 
 //go:generate enumer -type=ExecutorStatus,ShardStatus,AssignmentStatus,MigrationMode,HandoverType,LoadBalancingMode -json -output sharddistributor_statuses_enumer_generated.go
@@ -70,6 +71,106 @@ func (v *GetShardOwnerResponse) GetNamespace() (o string) {
 func (v *GetShardOwnerResponse) GetMetadata() (o map[string]string) {
 	if v != nil {
 		return v.Metadata
+	}
+	return
+}
+
+type GetNamespaceStateRequest struct {
+	Namespace string
+}
+
+func (v *GetNamespaceStateRequest) GetNamespace() (o string) {
+	if v != nil {
+		return v.Namespace
+	}
+	return
+}
+
+type GetNamespaceStateResponse struct {
+	Namespace string
+	Executors []*NamespaceExecutorState
+}
+
+func (v *GetNamespaceStateResponse) GetNamespace() (o string) {
+	if v != nil {
+		return v.Namespace
+	}
+	return
+}
+
+func (v *GetNamespaceStateResponse) GetExecutors() (o []*NamespaceExecutorState) {
+	if v != nil {
+		return v.Executors
+	}
+	return
+}
+
+type NamespaceExecutorState struct {
+	ExecutorID     string
+	Status         ExecutorStatus
+	LastHeartbeat  time.Time
+	Metadata       map[string]string
+	AssignedShards []*ExecutorAssignedShardState
+}
+
+func (v *NamespaceExecutorState) GetExecutorID() (o string) {
+	if v != nil {
+		return v.ExecutorID
+	}
+	return
+}
+
+func (v *NamespaceExecutorState) GetStatus() (o ExecutorStatus) {
+	if v != nil {
+		return v.Status
+	}
+	return
+}
+
+func (v *NamespaceExecutorState) GetLastHeartbeat() (o time.Time) {
+	if v != nil {
+		return v.LastHeartbeat
+	}
+	return
+}
+
+func (v *NamespaceExecutorState) GetMetadata() (o map[string]string) {
+	if v != nil {
+		return v.Metadata
+	}
+	return
+}
+
+func (v *NamespaceExecutorState) GetAssignedShards() (o []*ExecutorAssignedShardState) {
+	if v != nil {
+		return v.AssignedShards
+	}
+	return
+}
+
+type ExecutorAssignedShardState struct {
+	ShardKey                 string
+	AssignmentStatus         AssignmentStatus
+	AssignedStateModRevision int64
+}
+
+func (v *ExecutorAssignedShardState) GetShardKey() (o string) {
+	if v != nil {
+		return v.ShardKey
+	}
+	return
+}
+
+func (v *ExecutorAssignedShardState) GetAssignmentStatus() (o AssignmentStatus) {
+	if v != nil {
+		return v.AssignmentStatus
+	}
+	return
+}
+
+func (v *ExecutorAssignedShardState) GetAssignedStateModRevision() (o int64) {
+	if v != nil {
+		return v.AssignedStateModRevision
 	}
 	return
 }
