@@ -22,7 +22,11 @@
 
 package testdata
 
-import "github.com/cadence-workflow/shard-manager/common/types"
+import (
+	"time"
+
+	"github.com/cadence-workflow/shard-manager/common/types"
+)
 
 var (
 	ShardDistributorGetShardOwnerRequest = types.GetShardOwnerRequest{
@@ -77,6 +81,23 @@ var (
 				ExecutorID:     "executor-2",
 				AssignedShards: []*types.Shard{&types.Shard{ShardKey: "shard-3"}},
 				Metadata:       map[string]string{"key-2": "value-2"},
+			},
+		},
+	}
+	ShardDistributorGetNamespaceStateRequest = types.GetNamespaceStateRequest{
+		Namespace: "namespace",
+	}
+	ShardDistributorGetNamespaceStateResponse = types.GetNamespaceStateResponse{
+		Namespace: "namespace",
+		Executors: []*types.NamespaceExecutorState{
+			{
+				ExecutorID:    "executor-1",
+				Status:        types.ExecutorStatusACTIVE,
+				LastHeartbeat: time.Date(2024, 1, 2, 3, 4, 5, 6, time.UTC),
+				Metadata:      map[string]string{"k": "v"},
+				AssignedShards: []*types.ExecutorAssignedShardState{
+					{ShardKey: "a", AssignmentStatus: types.AssignmentStatusREADY, AssignedStateModRevision: 7},
+				},
 			},
 		},
 	}

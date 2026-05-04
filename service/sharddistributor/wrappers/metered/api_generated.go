@@ -28,6 +28,25 @@ func NewMetricsHandler(handler handler.Handler, logger log.Logger, metricsClient
 	}
 }
 
+func (h *metricsHandler) GetNamespaceState(ctx context.Context, gp1 *types.GetNamespaceStateRequest) (gp2 *types.GetNamespaceStateResponse, err error) {
+	defer func() { log.CapturePanic(recover(), h.logger, &err) }()
+
+	scope := h.metricsClient.Scope(metrics.ShardDistributorGetNamespaceStateScope)
+	scope = scope.Tagged(metrics.NamespaceTag(gp1.GetNamespace()))
+	scope.IncCounter(metrics.ShardDistributorRequests)
+	sw := scope.StartTimer(metrics.ShardDistributorLatency)
+	defer sw.Stop()
+	logger := h.logger.WithTags(tag.ShardNamespace(gp1.GetNamespace()))
+
+	gp2, err = h.handler.GetNamespaceState(ctx, gp1)
+
+	if err != nil {
+		handleErr(err, scope, logger)
+	}
+
+	return gp2, err
+}
+
 func (h *metricsHandler) GetShardOwner(ctx context.Context, gp1 *types.GetShardOwnerRequest) (gp2 *types.GetShardOwnerResponse, err error) {
 	defer func() { log.CapturePanic(recover(), h.logger, &err) }()
 

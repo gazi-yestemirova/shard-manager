@@ -896,6 +896,9 @@ const (
 	// ShardDistributorClientGetShardOwnerScope tracks GetShardOwner calls made by service to shard distributor
 	ShardDistributorClientGetShardOwnerScope
 
+	// ShardDistributorClientGetNamespaceStateScope tracks GetNamespaceState calls made by service to shard distributor
+	ShardDistributorClientGetNamespaceStateScope
+
 	// ShardDistributorClientWatchNamespaceStateScope tracks WatchNamespaceState calls made by service to shard distributor
 	ShardDistributorClientWatchNamespaceStateScope
 
@@ -1473,6 +1476,7 @@ const (
 const (
 	// ShardDistributorGetShardOwnerScope tracks GetShardOwner API calls received by service
 	ShardDistributorGetShardOwnerScope = iota + NumWorkerScopes
+	ShardDistributorGetNamespaceStateScope
 	ShardDistributorWatchNamespaceStateScope
 	ShardDistributorHeartbeatScope
 	ShardDistributorAssignLoopScope
@@ -1885,6 +1889,7 @@ var ScopeDefs = map[ServiceIdx]map[ScopeIdx]scopeDefinition{
 		PartitionConfigProviderScope: {operation: "PartitionConfigProvider"},
 
 		ShardDistributorClientGetShardOwnerScope:       {operation: "ShardDistributorClientGetShardOwner"},
+		ShardDistributorClientGetNamespaceStateScope:   {operation: "ShardDistributorClientGetNamespaceState"},
 		ShardDistributorClientWatchNamespaceStateScope: {operation: "ShardDistributorClientWatchNamespaceState"},
 		ShardDistributorExecutorClientHeartbeatScope:   {operation: "ShardDistributorExecutorHeartbeat"},
 
@@ -2171,6 +2176,7 @@ var ScopeDefs = map[ServiceIdx]map[ScopeIdx]scopeDefinition{
 	},
 	ShardDistributor: {
 		ShardDistributorGetShardOwnerScope:                         {operation: "GetShardOwner"},
+		ShardDistributorGetNamespaceStateScope:                     {operation: "GetNamespaceState"},
 		ShardDistributorWatchNamespaceStateScope:                   {operation: "WatchNamespaceState"},
 		ShardDistributorHeartbeatScope:                             {operation: "ExecutorHeartbeat"},
 		ShardDistributorAssignLoopScope:                            {operation: "ShardAssignLoop"},

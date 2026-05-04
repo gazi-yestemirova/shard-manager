@@ -184,6 +184,24 @@ func (h *handlerImpl) getOrAssignEphemeralShard(ctx context.Context, request *ty
 	return resp, nil
 }
 
+func (h *handlerImpl) GetNamespaceState(ctx context.Context, request *types.GetNamespaceStateRequest) (resp *types.GetNamespaceStateResponse, retError error) {
+	defer func() { log.CapturePanic(recover(), h.logger, &retError) }()
+
+	h.startWG.Wait()
+
+	namespaceIdx := slices.IndexFunc(h.shardDistributionCfg.Namespaces, func(namespace config.Namespace) bool {
+		return namespace.Name == request.GetNamespace()
+	})
+	if namespaceIdx == -1 {
+		return nil, &types.NamespaceNotFoundError{
+			Namespace: request.GetNamespace(),
+		}
+	}
+
+	// Stub until store-backed implementation lands: keeps RPC + YARPC registration buildable in early PRs.
+	return nil, &types.InternalServiceError{Message: "GetNamespaceState is not implemented yet"}
+}
+
 func (h *handlerImpl) WatchNamespaceState(request *types.WatchNamespaceStateRequest, server WatchNamespaceStateServer) error {
 	h.startWG.Wait()
 

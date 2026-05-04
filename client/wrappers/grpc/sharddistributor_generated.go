@@ -15,6 +15,11 @@ import (
 	"github.com/cadence-workflow/shard-manager/common/types/mapper/proto"
 )
 
+func (g sharddistributorClient) GetNamespaceState(ctx context.Context, gp1 *types.GetNamespaceStateRequest, p1 ...yarpc.CallOption) (gp2 *types.GetNamespaceStateResponse, err error) {
+	response, err := g.c.GetNamespaceState(ctx, proto.FromShardDistributorGetNamespaceStateRequest(gp1), p1...)
+	return proto.ToShardDistributorGetNamespaceStateResponse(response), proto.ToError(err)
+}
+
 func (g sharddistributorClient) GetShardOwner(ctx context.Context, gp1 *types.GetShardOwnerRequest, p1 ...yarpc.CallOption) (gp2 *types.GetShardOwnerResponse, err error) {
 	response, err := g.c.GetShardOwner(ctx, proto.FromShardDistributorGetShardOwnerRequest(gp1), p1...)
 	return proto.ToShardDistributorGetShardOwnerResponse(response), proto.ToError(err)
