@@ -331,7 +331,9 @@ func TestGetNamespaceState(t *testing.T) {
 	tests := []struct {
 		name            string
 		request         *types.GetNamespaceStateRequest
+		setupMocks      func(*store.MockStore)
 		wantErrContains string
+		validate        func(*testing.T, *types.GetNamespaceStateResponse)
 	}{
 		{
 			name:            "unknown_namespace",
@@ -339,9 +341,64 @@ func TestGetNamespaceState(t *testing.T) {
 			wantErrContains: "namespace not found",
 		},
 		{
-			name:            "stub_not_implemented",
-			request:         &types.GetNamespaceStateRequest{Namespace: _testNamespaceFixed},
-			wantErrContains: "not implemented yet",
+			name:    "get_state_error",
+			request: &types.GetNamespaceStateRequest{Namespace: _testNamespaceFixed},
+			setupMocks: func(m *store.MockStore) {
+				m.EXPECT().GetState(gomock.Any(), _testNamespaceFixed).Return(nil, errors.New("etcd down"))
+			},
+			wantErrContains: "failed to get namespace state",
+		},
+		{
+			name:    "success_executors_and_shards",
+			request: &types.GetNamespaceStateRequest{Namespace: _testNamespaceFixed},
+			setupMocks: func(m *store.MockStore) {
+				now := time.Unix(1000, 0).UTC()
+				m.EXPECT().GetState(gomock.Any(), _testNamespaceFixed).Return(&store.NamespaceState{
+					Executors: map[string]store.HeartbeatState{
+						"e1": {Status: types.ExecutorStatusACTIVE, LastHeartbeat: now, Metadata: map[string]string{"a": "1"}},
+					},
+					ShardAssignments: map[string]store.AssignedState{
+						"e1": {
+							AssignedShards: map[string]*types.ShardAssignment{
+								"z": {Status: types.AssignmentStatusREADY},
+								"a": {Status: types.AssignmentStatusREADY},
+							},
+							ModRevision: 42,
+						},
+						"e2": {
+							AssignedShards: map[string]*types.ShardAssignment{
+								"x": nil,
+							},
+							ModRevision: 7,
+						},
+					},
+				}, nil)
+			},
+			validate: func(t *testing.T, resp *types.GetNamespaceStateResponse) {
+				require.Equal(t, _testNamespaceFixed, resp.Namespace)
+				require.Len(t, resp.Executors, 2)
+				byID := make(map[string]*types.NamespaceExecutorState, len(resp.Executors))
+				for _, ex := range resp.Executors {
+					byID[ex.ExecutorID] = ex
+				}
+				e1 := byID["e1"]
+				require.NotNil(t, e1)
+				require.Equal(t, types.ExecutorStatusACTIVE, e1.Status)
+				require.Len(t, e1.AssignedShards, 2)
+				shardKeys := make([]string, 0, len(e1.AssignedShards))
+				for _, sh := range e1.AssignedShards {
+					shardKeys = append(shardKeys, sh.ShardKey)
+					require.Equal(t, int64(42), sh.AssignedStateModRevision)
+					require.Equal(t, types.AssignmentStatusREADY, sh.AssignmentStatus)
+				}
+				require.ElementsMatch(t, []string{"a", "z"}, shardKeys)
+
+				e2 := byID["e2"]
+				require.NotNil(t, e2)
+				require.Len(t, e2.AssignedShards, 1)
+				require.Equal(t, "x", e2.AssignedShards[0].ShardKey)
+				require.Equal(t, types.AssignmentStatusINVALID, e2.AssignedShards[0].AssignmentStatus)
+			},
 		},
 	}
 
@@ -349,11 +406,22 @@ func TestGetNamespaceState(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockStorage := store.NewMockStore(ctrl)
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockStorage)
+			}
 			h := newTestHandler(t, cfg, mockStorage)
 			resp, err := h.GetNamespaceState(context.Background(), tt.request)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tt.wantErrContains)
-			require.Nil(t, resp)
+			if tt.wantErrContains != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.wantErrContains)
+				require.Nil(t, resp)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, resp)
+			if tt.validate != nil {
+				tt.validate(t, resp)
+			}
 		})
 	}
 }
