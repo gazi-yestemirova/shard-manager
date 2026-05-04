@@ -198,7 +198,6 @@ func (h *handlerImpl) GetNamespaceState(ctx context.Context, request *types.GetN
 		}
 	}
 
-	// Stub until store-backed implementation lands: keeps RPC + YARPC registration buildable in early PRs.
 	return nil, &types.InternalServiceError{Message: "GetNamespaceState is not implemented yet"}
 }
 
