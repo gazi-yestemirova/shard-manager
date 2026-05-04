@@ -24,6 +24,7 @@ package smctl
 import (
 	"context"
 	"fmt"
+
 	"github.com/urfave/cli/v3"
 
 	"github.com/cadence-workflow/shard-manager/common/metrics"
