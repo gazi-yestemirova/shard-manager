@@ -206,6 +206,8 @@ func (h *handlerImpl) GetNamespaceState(ctx context.Context, request *types.GetN
 		return nil, &types.InternalServiceError{Message: fmt.Sprintf("failed to get namespace state: %v", err)}
 	}
 
+	// Union executor IDs: heartbeat and assignment maps can each contain IDs the other
+	// omits (e.g. partial reads or synthetic NamespaceState in tests).
 	executorIDs := make(map[string]struct{})
 	for id := range state.Executors {
 		executorIDs[id] = struct{}{}
@@ -216,31 +218,28 @@ func (h *handlerImpl) GetNamespaceState(ctx context.Context, request *types.GetN
 
 	executors := make([]*types.NamespaceExecutorState, 0, len(executorIDs))
 	for executorID := range executorIDs {
-		hb := state.Executors[executorID]
-		as, ok := state.ShardAssignments[executorID]
-		if !ok {
-			as = store.AssignedState{}
-		}
+		heartbeat := state.Executors[executorID]
+		assignedState := state.ShardAssignments[executorID]
 
-		assigned := make([]*types.ExecutorAssignedShardState, 0, len(as.AssignedShards))
-		for shardKey, sa := range as.AssignedShards {
-			st := types.AssignmentStatusINVALID
-			if sa != nil {
-				st = sa.Status
+		assignedShards := make([]*types.ExecutorAssignedShardState, 0, len(assignedState.AssignedShards))
+		for shardKey, shardAssignment := range assignedState.AssignedShards {
+			status := types.AssignmentStatusINVALID
+			if shardAssignment != nil {
+				status = shardAssignment.Status
 			}
-			assigned = append(assigned, &types.ExecutorAssignedShardState{
+			assignedShards = append(assignedShards, &types.ExecutorAssignedShardState{
 				ShardKey:                 shardKey,
-				AssignmentStatus:         st,
-				AssignedStateModRevision: as.ModRevision,
+				AssignmentStatus:         status,
+				AssignedStateModRevision: assignedState.ModRevision,
 			})
 		}
 
 		executors = append(executors, &types.NamespaceExecutorState{
 			ExecutorID:     executorID,
-			Status:         hb.Status,
-			LastHeartbeat:  hb.LastHeartbeat,
-			Metadata:       hb.Metadata,
-			AssignedShards: assigned,
+			Status:         heartbeat.Status,
+			LastHeartbeat:  heartbeat.LastHeartbeat,
+			Metadata:       heartbeat.Metadata,
+			AssignedShards: assignedShards,
 		})
 	}
 

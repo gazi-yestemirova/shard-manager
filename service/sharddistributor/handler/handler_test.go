@@ -342,7 +342,6 @@ func TestGetNamespaceState(t *testing.T) {
 		request         *types.GetNamespaceStateRequest
 		setupMocks      func(*store.MockStore)
 		wantErrContains string
-		validate        func(*testing.T, *types.GetNamespaceStateResponse)
 	}{
 		{
 			name:            "unknown_namespace",
@@ -357,58 +356,6 @@ func TestGetNamespaceState(t *testing.T) {
 			},
 			wantErrContains: "failed to get namespace state",
 		},
-		{
-			name:    "success_executors_and_shards",
-			request: &types.GetNamespaceStateRequest{Namespace: _testNamespaceFixed},
-			setupMocks: func(m *store.MockStore) {
-				now := time.Unix(1000, 0).UTC()
-				m.EXPECT().GetState(gomock.Any(), _testNamespaceFixed).Return(&store.NamespaceState{
-					Executors: map[string]store.HeartbeatState{
-						"e1": {Status: types.ExecutorStatusACTIVE, LastHeartbeat: now, Metadata: map[string]string{"a": "1"}},
-					},
-					ShardAssignments: map[string]store.AssignedState{
-						"e1": {
-							AssignedShards: map[string]*types.ShardAssignment{
-								"z": {Status: types.AssignmentStatusREADY},
-								"a": {Status: types.AssignmentStatusREADY},
-							},
-							ModRevision: 42,
-						},
-						"e2": {
-							AssignedShards: map[string]*types.ShardAssignment{
-								"x": nil,
-							},
-							ModRevision: 7,
-						},
-					},
-				}, nil)
-			},
-			validate: func(t *testing.T, resp *types.GetNamespaceStateResponse) {
-				require.Equal(t, _testNamespaceFixed, resp.Namespace)
-				require.Len(t, resp.Executors, 2)
-				byID := make(map[string]*types.NamespaceExecutorState, len(resp.Executors))
-				for _, ex := range resp.Executors {
-					byID[ex.ExecutorID] = ex
-				}
-				e1 := byID["e1"]
-				require.NotNil(t, e1)
-				require.Equal(t, types.ExecutorStatusACTIVE, e1.Status)
-				require.Len(t, e1.AssignedShards, 2)
-				shardKeys := make([]string, 0, len(e1.AssignedShards))
-				for _, sh := range e1.AssignedShards {
-					shardKeys = append(shardKeys, sh.ShardKey)
-					require.Equal(t, int64(42), sh.AssignedStateModRevision)
-					require.Equal(t, types.AssignmentStatusREADY, sh.AssignmentStatus)
-				}
-				require.ElementsMatch(t, []string{"a", "z"}, shardKeys)
-
-				e2 := byID["e2"]
-				require.NotNil(t, e2)
-				require.Len(t, e2.AssignedShards, 1)
-				require.Equal(t, "x", e2.AssignedShards[0].ShardKey)
-				require.Equal(t, types.AssignmentStatusINVALID, e2.AssignedShards[0].AssignmentStatus)
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -420,17 +367,140 @@ func TestGetNamespaceState(t *testing.T) {
 			}
 			h := newTestHandler(t, cfg, mockStorage)
 			resp, err := h.GetNamespaceState(context.Background(), tt.request)
-			if tt.wantErrContains != "" {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tt.wantErrContains)
-				require.Nil(t, resp)
-				return
-			}
-			require.NoError(t, err)
-			require.NotNil(t, resp)
-			if tt.validate != nil {
-				tt.validate(t, resp)
-			}
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tt.wantErrContains)
+			require.Nil(t, resp)
 		})
 	}
+}
+
+func TestGetNamespaceState_successMultipleExecutors(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
+		},
+	}
+	now := time.Unix(1000, 0).UTC()
+
+	ctrl := gomock.NewController(t)
+	mockStorage := store.NewMockStore(ctrl)
+	mockStorage.EXPECT().GetState(gomock.Any(), _testNamespaceFixed).Return(&store.NamespaceState{
+		Executors: map[string]store.HeartbeatState{
+			"e1": {Status: types.ExecutorStatusACTIVE, LastHeartbeat: now, Metadata: map[string]string{"a": "1"}},
+			"e2": {},
+		},
+		ShardAssignments: map[string]store.AssignedState{
+			"e1": {
+				AssignedShards: map[string]*types.ShardAssignment{
+					"z": {Status: types.AssignmentStatusREADY},
+					"a": {Status: types.AssignmentStatusREADY},
+				},
+				ModRevision: 42,
+			},
+			"e2": {
+				AssignedShards: map[string]*types.ShardAssignment{
+					"x": nil,
+				},
+				ModRevision: 7,
+			},
+		},
+	}, nil)
+
+	h := newTestHandler(t, cfg, mockStorage)
+	resp, err := h.GetNamespaceState(context.Background(), &types.GetNamespaceStateRequest{Namespace: _testNamespaceFixed})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, _testNamespaceFixed, resp.Namespace)
+	require.Len(t, resp.Executors, 2)
+
+	byID := make(map[string]*types.NamespaceExecutorState, len(resp.Executors))
+	for _, ex := range resp.Executors {
+		byID[ex.ExecutorID] = ex
+	}
+	e1 := byID["e1"]
+	require.NotNil(t, e1)
+	require.Equal(t, types.ExecutorStatusACTIVE, e1.Status)
+	require.Len(t, e1.AssignedShards, 2)
+	shardKeys := make([]string, 0, len(e1.AssignedShards))
+	for _, sh := range e1.AssignedShards {
+		shardKeys = append(shardKeys, sh.ShardKey)
+		require.Equal(t, int64(42), sh.AssignedStateModRevision)
+		require.Equal(t, types.AssignmentStatusREADY, sh.AssignmentStatus)
+	}
+	require.ElementsMatch(t, []string{"a", "z"}, shardKeys)
+
+	e2 := byID["e2"]
+	require.NotNil(t, e2)
+	require.Len(t, e2.AssignedShards, 1)
+	require.Equal(t, "x", e2.AssignedShards[0].ShardKey)
+	require.Equal(t, types.AssignmentStatusINVALID, e2.AssignedShards[0].AssignmentStatus)
+}
+
+func TestGetNamespaceState_heartbeatWithoutAssignments(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
+		},
+	}
+	now := time.Unix(2000, 0).UTC()
+
+	ctrl := gomock.NewController(t)
+	mockStorage := store.NewMockStore(ctrl)
+	mockStorage.EXPECT().GetState(gomock.Any(), _testNamespaceFixed).Return(&store.NamespaceState{
+		Executors: map[string]store.HeartbeatState{
+			"exec-hb-only": {
+				Status:        types.ExecutorStatusDRAINING,
+				LastHeartbeat: now,
+				Metadata:      map[string]string{"role": "matching"},
+			},
+		},
+		ShardAssignments: map[string]store.AssignedState{},
+	}, nil)
+
+	h := newTestHandler(t, cfg, mockStorage)
+	resp, err := h.GetNamespaceState(context.Background(), &types.GetNamespaceStateRequest{Namespace: _testNamespaceFixed})
+	require.NoError(t, err)
+	require.Len(t, resp.Executors, 1)
+	ex := resp.Executors[0]
+	require.Equal(t, "exec-hb-only", ex.ExecutorID)
+	require.Equal(t, types.ExecutorStatusDRAINING, ex.Status)
+	require.Equal(t, now, ex.LastHeartbeat)
+	require.Equal(t, map[string]string{"role": "matching"}, ex.Metadata)
+	require.Empty(t, ex.AssignedShards)
+}
+
+func TestGetNamespaceState_assignmentsWithoutHeartbeat(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	mockStorage := store.NewMockStore(ctrl)
+	mockStorage.EXPECT().GetState(gomock.Any(), _testNamespaceFixed).Return(&store.NamespaceState{
+		Executors: map[string]store.HeartbeatState{},
+		ShardAssignments: map[string]store.AssignedState{
+			"exec-assign-only": {
+				AssignedShards: map[string]*types.ShardAssignment{
+					"shard-1": {Status: types.AssignmentStatusREADY},
+				},
+				ModRevision: 55,
+			},
+		},
+	}, nil)
+
+	h := newTestHandler(t, cfg, mockStorage)
+	resp, err := h.GetNamespaceState(context.Background(), &types.GetNamespaceStateRequest{Namespace: _testNamespaceFixed})
+	require.NoError(t, err)
+	require.Len(t, resp.Executors, 1)
+	ex := resp.Executors[0]
+	require.Equal(t, "exec-assign-only", ex.ExecutorID)
+	require.Equal(t, types.ExecutorStatusINVALID, ex.Status)
+	require.True(t, ex.LastHeartbeat.IsZero())
+	require.Empty(t, ex.Metadata)
+	require.Len(t, ex.AssignedShards, 1)
+	require.Equal(t, "shard-1", ex.AssignedShards[0].ShardKey)
+	require.Equal(t, types.AssignmentStatusREADY, ex.AssignedShards[0].AssignmentStatus)
+	require.Equal(t, int64(55), ex.AssignedShards[0].AssignedStateModRevision)
 }
