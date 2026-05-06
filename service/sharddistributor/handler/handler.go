@@ -206,19 +206,9 @@ func (h *handlerImpl) GetNamespaceState(ctx context.Context, request *types.GetN
 		return nil, &types.InternalServiceError{Message: fmt.Sprintf("failed to get namespace state: %v", err)}
 	}
 
-	// Union executor IDs: heartbeat and assignment maps can each contain IDs the other
-	// omits (e.g. partial reads or synthetic NamespaceState in tests).
-	executorIDs := make(map[string]struct{})
-	for id := range state.Executors {
-		executorIDs[id] = struct{}{}
-	}
-	for id := range state.ShardAssignments {
-		executorIDs[id] = struct{}{}
-	}
+	executors := make([]*types.NamespaceExecutorState, 0, len(state.Executors))
 
-	executors := make([]*types.NamespaceExecutorState, 0, len(executorIDs))
-	for executorID := range executorIDs {
-		heartbeat := state.Executors[executorID]
+	for executorID, heartbeat := range state.Executors {
 		assignedState := state.ShardAssignments[executorID]
 
 		assignedShards := make([]*types.ExecutorAssignedShardState, 0, len(assignedState.AssignedShards))
