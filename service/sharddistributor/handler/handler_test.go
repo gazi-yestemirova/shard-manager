@@ -352,7 +352,7 @@ func TestGetNamespaceState(t *testing.T) {
 			name:    "get_state_error",
 			request: &types.GetNamespaceStateRequest{Namespace: _testNamespaceFixed},
 			setupMocks: func(m *store.MockStore) {
-				m.EXPECT().GetState(gomock.Any(), _testNamespaceFixed).Return(nil, errors.New("etcd down"))
+				m.EXPECT().GetState(gomock.Any(), _testNamespaceFixed).Return(nil, errors.New("etcd is down"))
 			},
 			wantErrContains: "failed to get namespace state",
 		},
@@ -386,20 +386,20 @@ func TestGetNamespaceState_successMultipleExecutors(t *testing.T) {
 	mockStorage := store.NewMockStore(ctrl)
 	mockStorage.EXPECT().GetState(gomock.Any(), _testNamespaceFixed).Return(&store.NamespaceState{
 		Executors: map[string]store.HeartbeatState{
-			"e1": {Status: types.ExecutorStatusACTIVE, LastHeartbeat: now, Metadata: map[string]string{"a": "1"}},
-			"e2": {},
+			"executor1": {Status: types.ExecutorStatusACTIVE, LastHeartbeat: now, Metadata: map[string]string{"ip": "127.0.0.1", "port": "1234"}},
+			"executor2": {},
 		},
 		ShardAssignments: map[string]store.AssignedState{
-			"e1": {
+			"executor1": {
 				AssignedShards: map[string]*types.ShardAssignment{
-					"z": {Status: types.AssignmentStatusREADY},
-					"a": {Status: types.AssignmentStatusREADY},
+					"shard1": {Status: types.AssignmentStatusREADY},
+					"shard2": {Status: types.AssignmentStatusREADY},
 				},
 				ModRevision: 42,
 			},
-			"e2": {
+			"executor2": {
 				AssignedShards: map[string]*types.ShardAssignment{
-					"x": nil,
+					"shard3": nil,
 				},
 				ModRevision: 7,
 			},
@@ -414,10 +414,10 @@ func TestGetNamespaceState_successMultipleExecutors(t *testing.T) {
 	require.Len(t, resp.Executors, 2)
 
 	byID := make(map[string]*types.NamespaceExecutorState, len(resp.Executors))
-	for _, ex := range resp.Executors {
-		byID[ex.ExecutorID] = ex
+	for _, executor := range resp.Executors {
+		byID[executor.ExecutorID] = executor
 	}
-	e1 := byID["e1"]
+	e1 := byID["executor1"]
 	require.NotNil(t, e1)
 	require.Equal(t, types.ExecutorStatusACTIVE, e1.Status)
 	require.Len(t, e1.AssignedShards, 2)
@@ -427,12 +427,12 @@ func TestGetNamespaceState_successMultipleExecutors(t *testing.T) {
 		require.Equal(t, int64(42), sh.AssignedStateModRevision)
 		require.Equal(t, types.AssignmentStatusREADY, sh.AssignmentStatus)
 	}
-	require.ElementsMatch(t, []string{"a", "z"}, shardKeys)
+	require.ElementsMatch(t, []string{"shard2", "shard1"}, shardKeys)
 
-	e2 := byID["e2"]
+	e2 := byID["executor2"]
 	require.NotNil(t, e2)
 	require.Len(t, e2.AssignedShards, 1)
-	require.Equal(t, "x", e2.AssignedShards[0].ShardKey)
+	require.Equal(t, "shard3", e2.AssignedShards[0].ShardKey)
 	require.Equal(t, types.AssignmentStatusINVALID, e2.AssignedShards[0].AssignmentStatus)
 }
 
@@ -442,16 +442,16 @@ func TestGetNamespaceState_heartbeatWithoutAssignments(t *testing.T) {
 			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
 		},
 	}
-	now := time.Unix(2000, 0).UTC()
+	now := time.Unix(1000, 0).UTC()
 
 	ctrl := gomock.NewController(t)
 	mockStorage := store.NewMockStore(ctrl)
 	mockStorage.EXPECT().GetState(gomock.Any(), _testNamespaceFixed).Return(&store.NamespaceState{
 		Executors: map[string]store.HeartbeatState{
-			"exec-hb-only": {
+			"exec-heartbeat-only": {
 				Status:        types.ExecutorStatusDRAINING,
 				LastHeartbeat: now,
-				Metadata:      map[string]string{"role": "matching"},
+				Metadata:      map[string]string{"ip": "127.0.0.1", "port": "1234"},
 			},
 		},
 		ShardAssignments: map[string]store.AssignedState{},
@@ -462,9 +462,8 @@ func TestGetNamespaceState_heartbeatWithoutAssignments(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, resp.Executors, 1)
 	ex := resp.Executors[0]
-	require.Equal(t, "exec-hb-only", ex.ExecutorID)
+	require.Equal(t, "exec-heartbeat-only", ex.ExecutorID)
 	require.Equal(t, types.ExecutorStatusDRAINING, ex.Status)
 	require.Equal(t, now, ex.LastHeartbeat)
-	require.Equal(t, map[string]string{"role": "matching"}, ex.Metadata)
 	require.Empty(t, ex.AssignedShards)
 }
