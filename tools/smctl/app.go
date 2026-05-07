@@ -58,12 +58,6 @@ func BuildCommandWithFactory(cf ClientFactory) *cliv3.Command {
 // rootFlags returns the flags exposed on the smctl root command.
 // These are persistent (Local==false) so subcommands can read them regardless of
 // where the flag was supplied on the command line.
-//
-// The package imports github.com/urfave/cli/v3 under the alias cliv3 (not the
-// default cli) so that gopls' organize-imports does not silently drop the
-// import: github.com/urfave/cli/v2 is also in this go.mod and exports the same
-// package name `cli`, which makes bare cli.X references ambiguous and triggers
-// gopls to rewrite the import. cliv3.X is unambiguous.
 func rootFlags() []cliv3.Flag {
 	return []cliv3.Flag{
 		&cliv3.StringFlag{

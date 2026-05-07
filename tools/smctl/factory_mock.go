@@ -12,9 +12,10 @@ package smctl
 import (
 	reflect "reflect"
 
-	sharddistributor "github.com/cadence-workflow/shard-manager/client/sharddistributor"
 	cli "github.com/urfave/cli/v3"
 	gomock "go.uber.org/mock/gomock"
+
+	sharddistributor "github.com/cadence-workflow/shard-manager/client/sharddistributor"
 )
 
 // MockClientFactory is a mock of ClientFactory interface.
