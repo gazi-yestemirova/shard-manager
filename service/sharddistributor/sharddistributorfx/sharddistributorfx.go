@@ -26,6 +26,7 @@ import (
 	"go.uber.org/fx"
 
 	sharddistributorv1 "github.com/cadence-workflow/shard-manager/.gen/proto/sharddistributor/v1"
+	"github.com/cadence-workflow/shard-manager/common/authorization"
 	"github.com/cadence-workflow/shard-manager/common/clock"
 	"github.com/cadence-workflow/shard-manager/common/log"
 	"github.com/cadence-workflow/shard-manager/common/metrics"
@@ -36,6 +37,7 @@ import (
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/leader/process"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/store"
 	meteredStore "github.com/cadence-workflow/shard-manager/service/sharddistributor/store/wrappers/metered"
+	"github.com/cadence-workflow/shard-manager/service/sharddistributor/wrappers/accesscontrolled"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/wrappers/grpc"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/wrappers/metered"
 )
@@ -65,6 +67,8 @@ type serversParams struct {
 	TimeSource clock.TimeSource
 	Store      store.Store
 
+	Authorizer authorization.Authorizer `optional:"true"`
+
 	Lifecycle fx.Lifecycle
 }
 
@@ -78,6 +82,7 @@ type ServersResult struct {
 func provideServers(params serversParams) ServersResult {
 	rawHandler := handler.NewHandler(params.Logger, params.TimeSource, params.ShardDistributionCfg, params.Config, params.Store)
 	wrappedHandler := metered.NewMetricsHandler(rawHandler, params.Logger, params.MetricsClient)
+	wrappedHandler = accesscontrolled.NewHandler(wrappedHandler, params.Authorizer)
 
 	executorHandler := handler.NewExecutorHandler(params.Logger, params.Store, params.TimeSource, params.ShardDistributionCfg, params.Config, params.MetricsClient)
 	wrappedExecutor := metered.NewExecutorMetricsExecutor(executorHandler, params.Logger, params.MetricsClient)
