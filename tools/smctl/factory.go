@@ -113,7 +113,7 @@ func newClientDispatcher(cmd *cliv3.Command) (*yarpc.Dispatcher, error) {
 	}
 
 	grpcTransportInst := grpc.NewTransport()
-	outbounds := transport.Outbounds{Unary: grpcTransportInst.NewSingleOutbound(hostPort)}
+	var outbounds transport.Outbounds
 
 	if tlsCertPath := cmd.String(FlagTLSCertPath); tlsCertPath != "" {
 		caCert, err := os.ReadFile(tlsCertPath)
@@ -130,6 +130,8 @@ func newClientDispatcher(cmd *cliv3.Command) (*yarpc.Dispatcher, error) {
 			grpcTransportInst.NewDialer(grpc.DialerCredentials(tlsCreds)),
 		)
 		outbounds = transport.Outbounds{Unary: grpcTransportInst.NewOutbound(tlsChooser)}
+	} else {
+		outbounds = transport.Outbounds{Unary: grpcTransportInst.NewSingleOutbound(hostPort)}
 	}
 
 	dispatcher := yarpc.NewDispatcher(yarpc.Config{
