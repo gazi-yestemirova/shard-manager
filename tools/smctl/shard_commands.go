@@ -16,7 +16,7 @@ func shardCommand(cf ClientFactory) *cliv3.Command {
 		Name:        "shard",
 		Aliases:     []string{"sh"},
 		Usage:       "Inspect and manage shard-manager shards",
-		Description: "Use --shard/-sd on the root command to identify the target shard.",
+		Description: "Use --shard/-sh on the root command to identify the target shard.",
 		Commands: []*cliv3.Command{
 			shardOwnerCommand(cf),
 		},
