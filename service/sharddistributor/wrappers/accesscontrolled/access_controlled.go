@@ -23,8 +23,10 @@
 // Package accesscontrolled wraps a handler.Handler with per-RPC permission checks
 // using authorization.Authorizer. Only RPCs that need a permission check are
 // overridden; the remaining methods (Health, lifecycle Start/Stop, the executor
-// hot-path GetShardOwner, and WatchNamespaceState) flow through the embedded
-// handler.Handler unchecked.
+// hot-path GetShardOwner, WatchNamespaceState, and ListNamespaces) flow through
+// the embedded handler.Handler unchecked. ListNamespaces is unchecked because
+// it returns fleet-wide static configuration (no per-namespace authorization
+// target) and is intended for operator tooling.
 package accesscontrolled
 
 import (

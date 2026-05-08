@@ -70,6 +70,25 @@ func (h *metricsHandler) Health(ctx context.Context) (hp1 *types.HealthStatus, e
 	return h.handler.Health(ctx)
 }
 
+func (h *metricsHandler) ListNamespaces(ctx context.Context, lp1 *types.ListNamespacesRequest) (lp2 *types.ListNamespacesResponse, err error) {
+	defer func() { log.CapturePanic(recover(), h.logger, &err) }()
+
+	scope := h.metricsClient.Scope(metrics.ShardDistributorListNamespacesScope)
+	scope = scope.Tagged(metrics.NamespaceTag(lp1.GetNamespace()))
+	scope.IncCounter(metrics.ShardDistributorRequests)
+	sw := scope.StartTimer(metrics.ShardDistributorLatency)
+	defer sw.Stop()
+	logger := h.logger.WithTags(tag.ShardNamespace(lp1.GetNamespace()))
+
+	lp2, err = h.handler.ListNamespaces(ctx, lp1)
+
+	if err != nil {
+		handleErr(err, scope, logger)
+	}
+
+	return lp2, err
+}
+
 func (h *metricsHandler) Start() {
 	h.handler.Start()
 	return
