@@ -783,16 +783,13 @@ func (m *ListNamespacesResponse) GetNamespaces() []*NamespaceConfig {
 // NamespaceConfig is the operator-visible static configuration for a namespace,
 // loaded from the server's shardDistribution.namespaces YAML config at startup.
 type NamespaceConfig struct {
-	// Name is the namespace identifier (e.g. "shard-distributor-canary").
+	// Name is the namespace identifier
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Type is "fixed" or "ephemeral". Kept as a string (not an enum) to match the
-	// server's config representation (NamespaceTypeFixed / NamespaceTypeEphemeral)
-	// and to avoid a wire migration whenever a new type is added.
+	// Type is "fixed" or "ephemeral".
 	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	// Mode is the migration mode (e.g. "onboarded", "local_pass", "distributed_pass").
-	// Kept as a string for the same reason as type.
 	Mode string `protobuf:"bytes,3,opt,name=mode,proto3" json:"mode,omitempty"`
-	// ShardNum is the configured number of shards. Only meaningful for type="fixed".
+	// ShardNum is the configured number of shards. Only for type="fixed".
 	ShardNum             int64    `protobuf:"varint,4,opt,name=shard_num,json=shardNum,proto3" json:"shard_num,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
