@@ -65,8 +65,10 @@ func TestNamespaceCommand_help_listsSubcommands(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	out := buf.String()
-	if !strings.Contains(out, "state") {
-		t.Errorf("namespace help should list 'state' subcommand:\n%s", out)
+	for _, want := range []string{"state", "list"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("namespace help should list %q subcommand:\n%s", want, out)
+		}
 	}
 }
 
@@ -223,6 +225,159 @@ func TestGetNamespaceState(t *testing.T) {
 				}
 				exp.Return(res.client, res.clientErr).MaxTimes(1)
 			}
+
+			cmd := BuildCommandWithFactory(cf)
+			buf := new(bytes.Buffer)
+			cmd.Writer = buf
+			cmd.ErrWriter = buf
+
+			err := cmd.Run(context.Background(), tt.args)
+
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil. out=%s", tt.wantErr, buf.String())
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("error: got %q want substring %q", err.Error(), tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Run: %v", err)
+			}
+			if tt.check != nil {
+				tt.check(t, buf.String())
+			}
+		})
+	}
+}
+
+func TestListNamespaces(t *testing.T) {
+	emptyReq := &types.ListNamespacesRequest{}
+	twoNamespaces := &types.ListNamespacesResponse{
+		Namespaces: []*types.NamespaceConfig{
+			{Name: "shard-distributor-canary", Type: "fixed", Mode: "onboarded", ShardNum: 32},
+			{Name: "ephemeral-ns", Type: "ephemeral", Mode: "distributed_pass"},
+		},
+	}
+
+	type setupResult struct {
+		client    sharddistributor.Client
+		clientErr error
+	}
+
+	tests := []struct {
+		name    string
+		args    []string
+		setup   func(t *testing.T, ctrl *gomock.Controller) setupResult
+		wantErr string
+		check   func(t *testing.T, stdout string)
+	}{
+		{
+			name: "table output sorts by name and renders headers + columns",
+			args: []string{"smctl", "namespace", "list"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				mc := sharddistributor.NewMockClient(ctrl)
+				mc.EXPECT().ListNamespaces(gomock.Any(), emptyReq).Return(twoNamespaces, nil)
+				return setupResult{client: mc}
+			},
+			check: func(t *testing.T, stdout string) {
+				lines := strings.Split(strings.TrimRight(stdout, "\n"), "\n")
+				if len(lines) != 3 {
+					t.Fatalf("expected 3 lines (header + 2 rows), got %d:\n%s", len(lines), stdout)
+				}
+				if !strings.Contains(lines[0], "NAME") || !strings.Contains(lines[0], "TYPE") || !strings.Contains(lines[0], "SHARDS") {
+					t.Errorf("header missing expected columns: %q", lines[0])
+				}
+				// Rows are sorted by name; "ephemeral-ns" precedes "shard-distributor-canary".
+				if !strings.HasPrefix(lines[1], "ephemeral-ns") {
+					t.Errorf("expected ephemeral-ns first, got: %q", lines[1])
+				}
+				// Ephemeral has no shard count -> "-".
+				if !strings.Contains(lines[1], "ephemeral") || !strings.Contains(lines[1], "distributed_pass") {
+					t.Errorf("ephemeral row missing fields: %q", lines[1])
+				}
+				if !strings.Contains(lines[1], " - ") && !strings.HasSuffix(strings.TrimSpace(lines[1]), "-") {
+					t.Errorf("expected ephemeral row to render shard count as '-': %q", lines[1])
+				}
+				if !strings.Contains(lines[2], "shard-distributor-canary") || !strings.Contains(lines[2], "32") {
+					t.Errorf("fixed row missing fields: %q", lines[2])
+				}
+			},
+		},
+		{
+			name: "--json flag produces valid JSON envelope",
+			args: []string{"smctl", "namespace", "list", "--json"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				mc := sharddistributor.NewMockClient(ctrl)
+				mc.EXPECT().ListNamespaces(gomock.Any(), emptyReq).Return(twoNamespaces, nil)
+				return setupResult{client: mc}
+			},
+			check: func(t *testing.T, stdout string) {
+				var resp types.ListNamespacesResponse
+				if err := json.Unmarshal([]byte(stdout), &resp); err != nil {
+					t.Fatalf("output is not valid JSON: %v\nout: %s", err, stdout)
+				}
+				if len(resp.Namespaces) != 2 {
+					t.Fatalf("expected 2 namespaces in JSON, got %d: %s", len(resp.Namespaces), stdout)
+				}
+			},
+		},
+		{
+			name: "alias 'ns ls' invokes namespace list",
+			args: []string{"smctl", "ns", "ls"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				mc := sharddistributor.NewMockClient(ctrl)
+				mc.EXPECT().ListNamespaces(gomock.Any(), emptyReq).Return(&types.ListNamespacesResponse{}, nil)
+				return setupResult{client: mc}
+			},
+			check: func(t *testing.T, stdout string) {
+				// Empty response still emits the header row so operators see the
+				// command produced output; only namespace rows are missing.
+				if !strings.Contains(stdout, "NAME") {
+					t.Errorf("empty response should still print header row, got:\n%s", stdout)
+				}
+			},
+		},
+		{
+			name: "API error surfaces with operation prefix",
+			args: []string{"smctl", "namespace", "list"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				mc := sharddistributor.NewMockClient(ctrl)
+				mc.EXPECT().ListNamespaces(gomock.Any(), emptyReq).Return(nil, errors.New("rpc unavailable"))
+				return setupResult{client: mc}
+			},
+			wantErr: "ListNamespaces: rpc unavailable",
+		},
+		{
+			name: "factory error short-circuits before RPC",
+			args: []string{"smctl", "namespace", "list"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				return setupResult{clientErr: errors.New("dial: refused")}
+			},
+			wantErr: "dial: refused",
+		},
+		{
+			name: "namespace list does NOT require --namespace flag",
+			args: []string{"smctl", "namespace", "list"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				// Without -n the persistent flag is "" — but list ignores it,
+				// so the call must still succeed.
+				mc := sharddistributor.NewMockClient(ctrl)
+				mc.EXPECT().ListNamespaces(gomock.Any(), emptyReq).Return(&types.ListNamespacesResponse{}, nil)
+				return setupResult{client: mc}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			res := tt.setup(t, ctrl)
+
+			cf := NewMockClientFactory(ctrl)
+			cf.EXPECT().Close().Return(nil).Times(1)
+			cf.EXPECT().ShardManagerClient(gomock.Any()).Return(res.client, res.clientErr).MaxTimes(1)
 
 			cmd := BuildCommandWithFactory(cf)
 			buf := new(bytes.Buffer)

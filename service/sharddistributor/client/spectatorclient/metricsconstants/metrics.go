@@ -5,6 +5,7 @@ const (
 	ShardDistributorSpectatorOperationTagName                    = "ShardDistributorSpectator"
 	ShardDistributorSpectatorGetShardOwnerOperationTagName       = "ShardDistributorSpectatorGetShardOwner"
 	ShardDistributorSpectatorGetNamespaceStateOperationTagName   = "ShardDistributorSpectatorGetNamespaceState"
+	ShardDistributorSpectatorListNamespacesOperationTagName      = "ShardDistributorSpectatorListNamespaces"
 	ShardDistributorSpectatorWatchNamespaceStateOperationTagName = "ShardDistributorSpectatorWatchNamespaceState"
 
 	// Counter metrics

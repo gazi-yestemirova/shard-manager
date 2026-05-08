@@ -83,6 +83,26 @@ func (mr *MockClientMockRecorder) GetShardOwner(arg0, arg1 any, arg2 ...any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShardOwner", reflect.TypeOf((*MockClient)(nil).GetShardOwner), varargs...)
 }
 
+// ListNamespaces mocks base method.
+func (m *MockClient) ListNamespaces(arg0 context.Context, arg1 *types.ListNamespacesRequest, arg2 ...yarpc.CallOption) (*types.ListNamespacesResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListNamespaces", varargs...)
+	ret0, _ := ret[0].(*types.ListNamespacesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListNamespaces indicates an expected call of ListNamespaces.
+func (mr *MockClientMockRecorder) ListNamespaces(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaces", reflect.TypeOf((*MockClient)(nil).ListNamespaces), varargs...)
+}
+
 // WatchNamespaceState mocks base method.
 func (m *MockClient) WatchNamespaceState(arg0 context.Context, arg1 *types.WatchNamespaceStateRequest, arg2 ...yarpc.CallOption) (WatchNamespaceStateClient, error) {
 	m.ctrl.T.Helper()

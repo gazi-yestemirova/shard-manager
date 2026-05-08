@@ -41,6 +41,7 @@ type Client interface {
 	GetShardOwner(context.Context, *types.GetShardOwnerRequest, ...yarpc.CallOption) (*types.GetShardOwnerResponse, error)
 	GetNamespaceState(context.Context, *types.GetNamespaceStateRequest, ...yarpc.CallOption) (*types.GetNamespaceStateResponse, error)
 	WatchNamespaceState(context.Context, *types.WatchNamespaceStateRequest, ...yarpc.CallOption) (WatchNamespaceStateClient, error)
+	ListNamespaces(context.Context, *types.ListNamespacesRequest, ...yarpc.CallOption) (*types.ListNamespacesResponse, error)
 }
 
 type WatchNamespaceStateClient interface {

@@ -72,6 +72,28 @@ func (c *sharddistributorClient) GetShardOwner(ctx context.Context, gp1 *types.G
 	return gp2, err
 }
 
+func (c *sharddistributorClient) ListNamespaces(ctx context.Context, lp1 *types.ListNamespacesRequest, p1 ...yarpc.CallOption) (lp2 *types.ListNamespacesResponse, err error) {
+	retryCount := getRetryCountFromContext(ctx)
+
+	var scope metrics.Scope
+	if retryCount == -1 {
+		scope = c.metricsClient.Scope(metrics.ShardDistributorClientListNamespacesScope)
+	} else {
+		scope = c.metricsClient.Scope(metrics.ShardDistributorClientListNamespacesScope, metrics.IsRetryTag(retryCount > 0))
+	}
+
+	scope.IncCounter(metrics.CadenceClientRequests)
+
+	sw := scope.StartTimer(metrics.CadenceClientLatency)
+	lp2, err = c.client.ListNamespaces(ctx, lp1, p1...)
+	sw.Stop()
+
+	if err != nil {
+		scope.IncCounter(metrics.CadenceClientFailures)
+	}
+	return lp2, err
+}
+
 func (c *sharddistributorClient) WatchNamespaceState(ctx context.Context, wp1 *types.WatchNamespaceStateRequest, p1 ...yarpc.CallOption) (w1 sharddistributor.WatchNamespaceStateClient, err error) {
 	retryCount := getRetryCountFromContext(ctx)
 
