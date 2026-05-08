@@ -23,10 +23,8 @@
 // Package accesscontrolled wraps a handler.Handler with per-RPC permission checks
 // using authorization.Authorizer. Only RPCs that need a permission check are
 // overridden; the remaining methods (Health, lifecycle Start/Stop, the executor
-// hot-path GetShardOwner, WatchNamespaceState, and ListNamespaces) flow through
-// the embedded handler.Handler unchecked. ListNamespaces is unchecked because
-// it returns fleet-wide static configuration (no per-namespace authorization
-// target) and is intended for operator tooling.
+// hot-path GetShardOwner, and WatchNamespaceState) flow through the embedded
+// handler.Handler unchecked.
 package accesscontrolled
 
 import (
@@ -63,6 +61,13 @@ func (a *accessControlledHandler) GetNamespaceState(ctx context.Context, req *ty
 		return nil, err
 	}
 	return a.Handler.GetNamespaceState(ctx, req)
+}
+
+func (a *accessControlledHandler) ListNamespaces(ctx context.Context, req *types.ListNamespacesRequest) (*types.ListNamespacesResponse, error) {
+	if err := a.authorize(ctx, "ListNamespaces", "", authorization.PermissionAdmin); err != nil {
+		return nil, err
+	}
+	return a.Handler.ListNamespaces(ctx, req)
 }
 
 func (a *accessControlledHandler) authorize(ctx context.Context, apiName, namespace string, permission authorization.Permission) error {
