@@ -25,6 +25,11 @@ func (g sharddistributorClient) GetShardOwner(ctx context.Context, gp1 *types.Ge
 	return proto.ToShardDistributorGetShardOwnerResponse(response), proto.ToError(err)
 }
 
+func (g sharddistributorClient) InspectShard(ctx context.Context, gp1 *types.GetShardOwnerRequest, p1 ...yarpc.CallOption) (gp2 *types.GetShardOwnerResponse, err error) {
+	response, err := g.c.InspectShard(ctx, proto.FromShardDistributorInspectShardRequest(gp1), p1...)
+	return proto.ToShardDistributorInspectShardResponse(response), proto.ToError(err)
+}
+
 func (g sharddistributorClient) WatchNamespaceState(ctx context.Context, wp1 *types.WatchNamespaceStateRequest, p1 ...yarpc.CallOption) (w1 sharddistributor.WatchNamespaceStateClient, err error) {
 	stream, err := g.c.WatchNamespaceState(ctx, proto.FromShardDistributorWatchNamespaceStateRequest(wp1), p1...)
 	if err != nil {

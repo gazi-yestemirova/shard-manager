@@ -30,8 +30,13 @@ option go_package = "github.com/cadence-workflow/shard-manager/.gen/proto/shardd
 // ShardDistributorAPI is used to query shard distributor for the current owner of a shard
 service ShardDistributorAPI {
 
-  // GetShardOwner returns the owner of a specific shard
+  // GetShardOwner returns the owner of a specific shard. For ephemeral namespaces, a missing
+  // shard may be created and assigned; use InspectShard for a read-only lookup.
   rpc GetShardOwner(GetShardOwnerRequest) returns (GetShardOwnerResponse);
+
+  // InspectShard returns the current owner of a shard from storage only. Unlike GetShardOwner,
+  // it never creates or assigns an ephemeral shard when the shard key is absent.
+  rpc InspectShard(InspectShardRequest) returns (InspectShardResponse);
 
   // GetNamespaceState returns a snapshot of all executors in a namespace and their assigned shards
   rpc GetNamespaceState(GetNamespaceStateRequest) returns (GetNamespaceStateResponse);
@@ -50,6 +55,17 @@ message GetShardOwnerRequest {
 }
 
 message GetShardOwnerResponse {
+  string owner = 1;
+  string namespace = 2;
+  map<string, string> metadata = 3;
+}
+
+message InspectShardRequest {
+  string shard_key = 1;
+  string namespace = 2;
+}
+
+message InspectShardResponse {
   string owner = 1;
   string namespace = 2;
   map<string, string> metadata = 3;

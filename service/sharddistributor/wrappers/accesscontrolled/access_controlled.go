@@ -22,9 +22,9 @@
 
 // Package accesscontrolled wraps a handler.Handler with per-RPC permission checks
 // using authorization.Authorizer. Only RPCs that need a permission check are
-// overridden; the remaining methods (Health, lifecycle Start/Stop, the executor
-// hot-path GetShardOwner, and WatchNamespaceState) flow through the embedded
-// handler.Handler unchecked.
+// overridden (currently GetNamespaceState and InspectShard); the remaining methods
+// (Health, lifecycle Start/Stop, the executor hot-path GetShardOwner, and
+// WatchNamespaceState) flow through the embedded handler.Handler unchecked.
 package accesscontrolled
 
 import (
@@ -54,6 +54,13 @@ func NewHandler(h handler.Handler, authorizer authorization.Authorizer) handler.
 		Handler:    h,
 		authorizer: authorizer,
 	}
+}
+
+func (a *accessControlledHandler) InspectShard(ctx context.Context, req *types.GetShardOwnerRequest) (*types.GetShardOwnerResponse, error) {
+	if err := a.authorize(ctx, "InspectShard", req.GetNamespace(), authorization.PermissionRead); err != nil {
+		return nil, err
+	}
+	return a.Handler.InspectShard(ctx, req)
 }
 
 func (a *accessControlledHandler) GetNamespaceState(ctx context.Context, req *types.GetNamespaceStateRequest) (*types.GetNamespaceStateResponse, error) {

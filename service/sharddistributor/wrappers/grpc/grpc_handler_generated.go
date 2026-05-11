@@ -31,6 +31,11 @@ func (g GRPCHandler) GetShardOwner(ctx context.Context, request *sharddistributo
 	return proto.FromShardDistributorGetShardOwnerResponse(response), proto.FromError(err)
 }
 
+func (g GRPCHandler) InspectShard(ctx context.Context, request *sharddistributorv1.InspectShardRequest) (*sharddistributorv1.InspectShardResponse, error) {
+	response, err := g.h.InspectShard(ctx, proto.ToShardDistributorInspectShardRequest(request))
+	return proto.FromShardDistributorInspectShardResponse(response), proto.FromError(err)
+}
+
 func (g GRPCHandler) ListNamespaces(ctx context.Context, request *sharddistributorv1.ListNamespacesRequest) (*sharddistributorv1.ListNamespacesResponse, error) {
 	response, err := g.h.ListNamespaces(ctx, proto.ToShardDistributorListNamespacesRequest(request))
 	return proto.FromShardDistributorListNamespacesResponse(response), proto.FromError(err)

@@ -53,6 +53,17 @@ func (c *sharddistributorClient) GetShardOwner(ctx context.Context, gp1 *types.G
 	return resp, err
 }
 
+func (c *sharddistributorClient) InspectShard(ctx context.Context, gp1 *types.GetShardOwnerRequest, p1 ...yarpc.CallOption) (gp2 *types.GetShardOwnerResponse, err error) {
+	var resp *types.GetShardOwnerResponse
+	op := func(ctx context.Context) error {
+		var err error
+		resp, err = c.client.InspectShard(ctx, gp1, p1...)
+		return err
+	}
+	err = c.throttleRetry.Do(ctx, op)
+	return resp, err
+}
+
 func (c *sharddistributorClient) WatchNamespaceState(ctx context.Context, wp1 *types.WatchNamespaceStateRequest, p1 ...yarpc.CallOption) (w1 sharddistributor.WatchNamespaceStateClient, err error) {
 	var resp sharddistributor.WatchNamespaceStateClient
 	op := func(ctx context.Context) error {
