@@ -45,20 +45,37 @@ import (
 // Within the batch, each shard is assigned to an ACTIVE executor according to
 // the configured load balancing mode. The balancer updates its in-batch load
 // state after every pick so later picks account for earlier picks.
-func (h *handlerImpl) assignEphemeralBatch(ctx context.Context, namespace string, shardKeys []string) (map[string]*types.GetShardOwnerResponse, error) {
+func (h *handlerImpl) assignEphemeralBatch(ctx context.Context, namespace string, shardKeys []string) (map[string]*types.GetShardOwnerResponse, map[string]error, error) {
 	state, err := h.storage.GetState(ctx, namespace)
 	if err != nil {
-		return nil, &types.InternalServiceError{Message: fmt.Sprintf("get namespace state: %v", err)}
+		return nil, nil, &types.InternalServiceError{Message: fmt.Sprintf("get namespace state: %v", err)}
+	}
+
+	// Reject drained shards before consulting the load balancer. They are
+	// reported per-shard so only the affected shards in the batch see the
+	// error; other shards proceed with their normal assignment.
+	assignableShards := make([]string, 0, len(shardKeys))
+	perShardErrors := make(map[string]error)
+	for _, shardKey := range shardKeys {
+		if _, ok := state.DrainedShards[shardKey]; ok {
+			perShardErrors[shardKey] = &types.ShardDrainedError{Namespace: namespace, ShardKey: shardKey}
+			continue
+		}
+		assignableShards = append(assignableShards, shardKey)
+	}
+
+	if len(assignableShards) == 0 {
+		return nil, perShardErrors, nil
 	}
 
 	balancer, err := loadbalance.New(h.cfg.GetLoadBalancingMode(namespace), state)
 	if err != nil {
-		return nil, &types.InternalServiceError{Message: err.Error()}
+		return nil, nil, &types.InternalServiceError{Message: err.Error()}
 	}
 
-	chosenExecutors, err := pickExecutors(namespace, balancer, shardKeys)
+	chosenExecutors, err := pickExecutors(namespace, balancer, assignableShards)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	mergeAssignments(state, chosenExecutors)
@@ -67,17 +84,18 @@ func (h *handlerImpl) assignEphemeralBatch(ctx context.Context, namespace string
 		if errors.Is(err, store.ErrVersionConflict) {
 			// Return the version-conflict sentinel unwrapped so callers can
 			// detect it with errors.Is and decide whether to retry.
-			return nil, fmt.Errorf("assign ephemeral shards: %w", err)
+			return nil, nil, fmt.Errorf("assign ephemeral shards: %w", err)
 		}
-		return nil, &types.InternalServiceError{Message: fmt.Sprintf("assign ephemeral shards: %v", err)}
+		return nil, nil, &types.InternalServiceError{Message: fmt.Sprintf("assign ephemeral shards: %v", err)}
 	}
 
 	executorOwners, err := h.fetchExecutorMetadata(ctx, namespace, chosenExecutors)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return buildResults(namespace, shardKeys, chosenExecutors, executorOwners), nil
+	results := buildResults(namespace, assignableShards, chosenExecutors, executorOwners)
+	return results, perShardErrors, nil
 }
 
 // pickExecutors asks the balancer to choose an executor for each shard key.

@@ -46,6 +46,10 @@ type Handler interface {
 	GetNamespaceState(context.Context, *types.GetNamespaceStateRequest) (*types.GetNamespaceStateResponse, error)
 
 	WatchNamespaceState(*types.WatchNamespaceStateRequest, WatchNamespaceStateServer) error
+
+	DrainShards(context.Context, *types.DrainShardsRequest) (*types.DrainShardsResponse, error)
+	UndrainShards(context.Context, *types.UndrainShardsRequest) (*types.UndrainShardsResponse, error)
+	GetDrainedShards(context.Context, *types.GetDrainedShardsRequest) (*types.GetDrainedShardsResponse, error)
 }
 
 type Executor interface {

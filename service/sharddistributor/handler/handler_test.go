@@ -263,6 +263,12 @@ func TestGetShardOwner(t *testing.T) {
 
 			handler := newTestHandler(t, cfg, mockStorage)
 
+			// GetShardOwner consults the drained list on every call. The
+			// individual test cases below are not exercising drain behaviour
+			// so we default it to an empty list for whatever namespace they
+			// hit.
+			mockStorage.EXPECT().GetDrainedShards(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+
 			if tt.setupMocks != nil {
 				tt.setupMocks(mockStorage)
 			}
@@ -434,6 +440,217 @@ func TestGetNamespaceState_successMultipleExecutors(t *testing.T) {
 	require.Len(t, e2.AssignedShards, 1)
 	require.Equal(t, "shard3", e2.AssignedShards[0].ShardKey)
 	require.Equal(t, types.AssignmentStatusINVALID, e2.AssignedShards[0].AssignmentStatus)
+}
+
+func TestGetShardOwner_DrainedShard(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
+			{Name: _testNamespaceEphemeral, Type: config.NamespaceTypeEphemeral},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		namespace string
+	}{
+		{"fixed namespace returns drained error", _testNamespaceFixed},
+		{"ephemeral namespace returns drained error", _testNamespaceEphemeral},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockStorage := store.NewMockStore(ctrl)
+
+			mockStorage.EXPECT().GetDrainedShards(gomock.Any(), tc.namespace).Return([]string{"shard-7"}, nil)
+
+			h := newTestHandler(t, cfg, mockStorage)
+			resp, err := h.GetShardOwner(context.Background(), &types.GetShardOwnerRequest{
+				Namespace: tc.namespace,
+				ShardKey:  "shard-7",
+			})
+			require.Error(t, err)
+			require.Nil(t, resp)
+			var drainedErr *types.ShardDrainedError
+			require.ErrorAs(t, err, &drainedErr)
+			require.Equal(t, "shard-7", drainedErr.ShardKey)
+			require.Equal(t, tc.namespace, drainedErr.Namespace)
+		})
+	}
+}
+
+func TestDrainShards(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		request   *types.DrainShardsRequest
+		mockSetup func(*store.MockStore)
+		wantResp  *types.DrainShardsResponse
+		wantErr   string
+	}{
+		{
+			name:    "missing namespace",
+			request: &types.DrainShardsRequest{ShardKeys: []string{"1"}},
+			wantErr: "namespace is required",
+		},
+		{
+			name:    "unknown namespace",
+			request: &types.DrainShardsRequest{Namespace: "missing", ShardKeys: []string{"1"}},
+			wantErr: "namespace not found",
+		},
+		{
+			name:    "store error wrapped as internal",
+			request: &types.DrainShardsRequest{Namespace: _testNamespaceFixed, ShardKeys: []string{"1"}},
+			mockSetup: func(m *store.MockStore) {
+				m.EXPECT().DrainShards(gomock.Any(), _testNamespaceFixed, []string{"1"}).Return(nil, errors.New("etcd down"))
+			},
+			wantErr: "failed to drain shards",
+		},
+		{
+			name:    "success returns the union from store",
+			request: &types.DrainShardsRequest{Namespace: _testNamespaceFixed, ShardKeys: []string{"1", "2"}},
+			mockSetup: func(m *store.MockStore) {
+				m.EXPECT().DrainShards(gomock.Any(), _testNamespaceFixed, []string{"1", "2"}).Return([]string{"1", "2", "5"}, nil)
+			},
+			wantResp: &types.DrainShardsResponse{DrainedShardKeys: []string{"1", "2", "5"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockStorage := store.NewMockStore(ctrl)
+			if tt.mockSetup != nil {
+				tt.mockSetup(mockStorage)
+			}
+			h := newTestHandler(t, cfg, mockStorage)
+			resp, err := h.DrainShards(context.Background(), tt.request)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.wantErr)
+				require.Nil(t, resp)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.wantResp, resp)
+		})
+	}
+}
+
+func TestUndrainShards(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		request   *types.UndrainShardsRequest
+		mockSetup func(*store.MockStore)
+		wantResp  *types.UndrainShardsResponse
+		wantErr   string
+	}{
+		{
+			name:    "missing namespace",
+			request: &types.UndrainShardsRequest{ShardKeys: []string{"1"}},
+			wantErr: "namespace is required",
+		},
+		{
+			name:    "unknown namespace",
+			request: &types.UndrainShardsRequest{Namespace: "missing", ShardKeys: []string{"1"}},
+			wantErr: "namespace not found",
+		},
+		{
+			name:    "success returns the removed keys from store",
+			request: &types.UndrainShardsRequest{Namespace: _testNamespaceFixed, ShardKeys: []string{"1", "2"}},
+			mockSetup: func(m *store.MockStore) {
+				m.EXPECT().UndrainShards(gomock.Any(), _testNamespaceFixed, []string{"1", "2"}).Return([]string{"1"}, nil)
+			},
+			wantResp: &types.UndrainShardsResponse{UndrainedShardKeys: []string{"1"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockStorage := store.NewMockStore(ctrl)
+			if tt.mockSetup != nil {
+				tt.mockSetup(mockStorage)
+			}
+			h := newTestHandler(t, cfg, mockStorage)
+			resp, err := h.UndrainShards(context.Background(), tt.request)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.wantErr)
+				require.Nil(t, resp)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.wantResp, resp)
+		})
+	}
+}
+
+func TestGetDrainedShards(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		request   *types.GetDrainedShardsRequest
+		mockSetup func(*store.MockStore)
+		wantResp  *types.GetDrainedShardsResponse
+		wantErr   string
+	}{
+		{
+			name:    "missing namespace",
+			request: &types.GetDrainedShardsRequest{},
+			wantErr: "namespace is required",
+		},
+		{
+			name:    "unknown namespace",
+			request: &types.GetDrainedShardsRequest{Namespace: "missing"},
+			wantErr: "namespace not found",
+		},
+		{
+			name:    "success",
+			request: &types.GetDrainedShardsRequest{Namespace: _testNamespaceFixed},
+			mockSetup: func(m *store.MockStore) {
+				m.EXPECT().GetDrainedShards(gomock.Any(), _testNamespaceFixed).Return([]string{"1", "2"}, nil)
+			},
+			wantResp: &types.GetDrainedShardsResponse{Namespace: _testNamespaceFixed, ShardKeys: []string{"1", "2"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockStorage := store.NewMockStore(ctrl)
+			if tt.mockSetup != nil {
+				tt.mockSetup(mockStorage)
+			}
+			h := newTestHandler(t, cfg, mockStorage)
+			resp, err := h.GetDrainedShards(context.Background(), tt.request)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.wantErr)
+				require.Nil(t, resp)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.wantResp, resp)
+		})
+	}
 }
 
 func TestGetNamespaceState_heartbeatWithoutAssignments(t *testing.T) {

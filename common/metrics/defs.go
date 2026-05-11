@@ -902,6 +902,15 @@ const (
 	// ShardDistributorClientWatchNamespaceStateScope tracks WatchNamespaceState calls made by service to shard distributor
 	ShardDistributorClientWatchNamespaceStateScope
 
+	// ShardDistributorClientDrainShardsScope tracks DrainShards calls made by service to shard distributor
+	ShardDistributorClientDrainShardsScope
+
+	// ShardDistributorClientUndrainShardsScope tracks UndrainShards calls made by service to shard distributor
+	ShardDistributorClientUndrainShardsScope
+
+	// ShardDistributorClientGetDrainedShardsScope tracks GetDrainedShards calls made by service to shard distributor
+	ShardDistributorClientGetDrainedShardsScope
+
 	// ShardDistributorExecutorClientHeartbeatScope tracks Heartbeat calls made by executor to shard distributor
 	ShardDistributorExecutorClientHeartbeatScope
 
@@ -1480,6 +1489,9 @@ const (
 	ShardDistributorWatchNamespaceStateScope
 	ShardDistributorHeartbeatScope
 	ShardDistributorAssignLoopScope
+	ShardDistributorDrainShardsScope
+	ShardDistributorUndrainShardsScope
+	ShardDistributorGetDrainedShardsScope
 
 	ShardDistributorStoreGetShardOwnerScope
 	ShardDistributorStoreAssignShardScope
@@ -1494,6 +1506,9 @@ const (
 	ShardDistributorStoreSubscribeToExecutorStatusChangesScope
 	ShardDistributorStoreSubscribeToAssignmentChangesScope
 	ShardDistributorStoreDeleteAssignedStatesScope
+	ShardDistributorStoreDrainShardsScope
+	ShardDistributorStoreUndrainShardsScope
+	ShardDistributorStoreGetDrainedShardsScope
 
 	// The scope for the shard distributor executor
 	ShardDistributorExecutorScope
@@ -1891,6 +1906,9 @@ var ScopeDefs = map[ServiceIdx]map[ScopeIdx]scopeDefinition{
 		ShardDistributorClientGetShardOwnerScope:       {operation: "ShardDistributorClientGetShardOwner"},
 		ShardDistributorClientGetNamespaceStateScope:   {operation: "ShardDistributorClientGetNamespaceState"},
 		ShardDistributorClientWatchNamespaceStateScope: {operation: "ShardDistributorClientWatchNamespaceState"},
+		ShardDistributorClientDrainShardsScope:         {operation: "ShardDistributorClientDrainShards"},
+		ShardDistributorClientUndrainShardsScope:       {operation: "ShardDistributorClientUndrainShards"},
+		ShardDistributorClientGetDrainedShardsScope:    {operation: "ShardDistributorClientGetDrainedShards"},
 		ShardDistributorExecutorClientHeartbeatScope:   {operation: "ShardDistributorExecutorHeartbeat"},
 
 		LoadBalancerScope: {operation: "RRLoadBalancer"},
@@ -2180,6 +2198,9 @@ var ScopeDefs = map[ServiceIdx]map[ScopeIdx]scopeDefinition{
 		ShardDistributorWatchNamespaceStateScope:                   {operation: "WatchNamespaceState"},
 		ShardDistributorHeartbeatScope:                             {operation: "ExecutorHeartbeat"},
 		ShardDistributorAssignLoopScope:                            {operation: "ShardAssignLoop"},
+		ShardDistributorDrainShardsScope:                           {operation: "DrainShards"},
+		ShardDistributorUndrainShardsScope:                         {operation: "UndrainShards"},
+		ShardDistributorGetDrainedShardsScope:                      {operation: "GetDrainedShards"},
 		ShardDistributorExecutorScope:                              {operation: "Executor"},
 		ShardDistributorStoreGetShardOwnerScope:                    {operation: "StoreGetShardOwner"},
 		ShardDistributorStoreAssignShardScope:                      {operation: "StoreAssignShard"},
@@ -2194,6 +2215,9 @@ var ScopeDefs = map[ServiceIdx]map[ScopeIdx]scopeDefinition{
 		ShardDistributorStoreSubscribeToExecutorStatusChangesScope: {operation: "StoreSubscribeToExecutorStatusChanges"},
 		ShardDistributorStoreSubscribeToAssignmentChangesScope:     {operation: "StoreSubscribeToAssignmentChanges"},
 		ShardDistributorStoreDeleteAssignedStatesScope:             {operation: "StoreDeleteAssignedStates"},
+		ShardDistributorStoreDrainShardsScope:                      {operation: "StoreDrainShards"},
+		ShardDistributorStoreUndrainShardsScope:                    {operation: "StoreUndrainShards"},
+		ShardDistributorStoreGetDrainedShardsScope:                 {operation: "StoreGetDrainedShards"},
 		ShardDistributorWatchScope:                                 {operation: "Watch"},
 		ShardDistributorLeaderScope:                                {operation: "Leader"},
 	},

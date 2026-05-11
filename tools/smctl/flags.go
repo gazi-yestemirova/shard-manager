@@ -12,6 +12,7 @@ const (
 	FlagContextTimeout = "context-timeout"
 
 	FlagNamespace = "namespace"
+	FlagShardKey  = "shard"
 )
 
 // Connection defaults for talking to a locally-running shard-manager.

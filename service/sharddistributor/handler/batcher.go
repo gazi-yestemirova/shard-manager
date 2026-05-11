@@ -37,10 +37,21 @@ const (
 	_intervalJitterCoeff  = 0.1 // 10% jitter
 )
 
-// ephemeralAssignmentBatchFn is a function that assigns a batch of shards within a namespace
-// and returns a map of shardKey -> GetShardOwnerResponse for each successfully assigned shard.
-// Keys absent from the result map indicate an error for that specific shard.
-type ephemeralAssignmentBatchFn func(ctx context.Context, namespace string, shardKeys []string) (map[string]*types.GetShardOwnerResponse, error)
+// ephemeralAssignmentBatchFn is a function that assigns a batch of shards within a namespace.
+//
+// It returns:
+//   - results: map of shardKey -> GetShardOwnerResponse for each successfully assigned shard.
+//   - perShardErrors: map of shardKey -> error for shards that failed individually
+//     (for example because they are drained). May be nil.
+//   - err: a batch-wide error that applies to every shard in the batch.
+//
+// For each request shardKey, exactly one of results[shardKey] or perShardErrors[shardKey]
+// is expected to be set when the batch-wide err is nil.
+type ephemeralAssignmentBatchFn func(ctx context.Context, namespace string, shardKeys []string) (
+	results map[string]*types.GetShardOwnerResponse,
+	perShardErrors map[string]error,
+	err error,
+)
 
 // batchRequest is a single caller's request submitted to the shardBatcher.
 type batchRequest struct {
@@ -175,22 +186,24 @@ func (b *shardBatcher) flush(pending map[string][]*batchRequest) {
 		// abort the whole batch; callers will surface their own context error
 		// via the select in Submit.
 		ctx, cancel := context.WithTimeout(context.Background(), 5*b.interval)
-		results, err := b.processBatch(ctx, namespace, shardKeys)
+		results, perShardErrors, err := b.processBatch(ctx, namespace, shardKeys)
 		cancel()
 
 		for _, req := range reqs {
 			var res batchResponse
-			if err != nil {
+			switch {
+			case err != nil:
 				res = batchResponse{err: err}
-			} else {
+			case perShardErrors[req.shardKey] != nil:
+				res = batchResponse{err: perShardErrors[req.shardKey]}
+			case results[req.shardKey] != nil:
 				res = batchResponse{resp: results[req.shardKey]}
-				if res.resp == nil {
-					// processBatch is expected to always include an entry for
-					// every key it was given; a missing entry is an internal error.
-					res = batchResponse{err: &types.InternalServiceError{
-						Message: "batch processor returned no result for shard key: " + req.shardKey,
-					}}
-				}
+			default:
+				// processBatch is expected to always include an entry for
+				// every key it was given; a missing entry is an internal error.
+				res = batchResponse{err: &types.InternalServiceError{
+					Message: "batch processor returned no result for shard key: " + req.shardKey,
+				}}
 			}
 			// Non-blocking write: respChan has capacity 1 and each req has
 			// exactly one writer (this loop) and one reader (Submit).

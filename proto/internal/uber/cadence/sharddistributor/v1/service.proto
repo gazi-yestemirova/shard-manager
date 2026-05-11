@@ -38,6 +38,20 @@ service ShardDistributorAPI {
 
   // WatchNamespaceState streams updates about executors and their assigned shards for a namespace
   rpc WatchNamespaceState(WatchNamespaceStateRequest) returns (stream WatchNamespaceStateResponse);
+
+  // DrainShards marks the given shards as drained for the namespace.
+  // Drained shards are removed from their current executor on the next
+  // rebalance and are not eligible for assignment until UndrainShards is
+  // called for the same shard keys.
+  rpc DrainShards(DrainShardsRequest) returns (DrainShardsResponse);
+
+  // UndrainShards removes the given shards from the drained list for the
+  // namespace, making them eligible for assignment again.
+  rpc UndrainShards(UndrainShardsRequest) returns (UndrainShardsResponse);
+
+  // GetDrainedShards returns the list of shard keys currently marked as
+  // drained for the namespace.
+  rpc GetDrainedShards(GetDrainedShardsRequest) returns (GetDrainedShardsResponse);
 }
 
 message GetShardOwnerRequest {
@@ -56,6 +70,11 @@ message NamespaceNotFoundError {
 }
 
 message ShardNotFoundError {
+  string namespace = 1;
+  string shard_key = 2;
+}
+
+message ShardDrainedError {
   string namespace = 1;
   string shard_key = 2;
 }
@@ -101,4 +120,34 @@ message ExecutorInfo {
 
 message Shard {
   string shard_key = 1;
+}
+
+message DrainShardsRequest {
+  string namespace = 1;
+  repeated string shard_keys = 2;
+}
+
+message DrainShardsResponse {
+  // shard_keys that are currently drained for the namespace after this call
+  // (includes shards that were already drained before the call).
+  repeated string drained_shard_keys = 1;
+}
+
+message UndrainShardsRequest {
+  string namespace = 1;
+  repeated string shard_keys = 2;
+}
+
+message UndrainShardsResponse {
+  // shard_keys that were actually removed from the drained list by this call.
+  repeated string undrained_shard_keys = 1;
+}
+
+message GetDrainedShardsRequest {
+  string namespace = 1;
+}
+
+message GetDrainedShardsResponse {
+  string namespace = 1;
+  repeated string shard_keys = 2;
 }

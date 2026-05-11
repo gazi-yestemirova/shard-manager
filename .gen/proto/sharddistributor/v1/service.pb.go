@@ -244,6 +244,61 @@ func (m *ShardNotFoundError) GetShardKey() string {
 	return ""
 }
 
+type ShardDrainedError struct {
+	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	ShardKey             string   `protobuf:"bytes,2,opt,name=shard_key,json=shardKey,proto3" json:"shard_key,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ShardDrainedError) Reset()         { *m = ShardDrainedError{} }
+func (m *ShardDrainedError) String() string { return proto.CompactTextString(m) }
+func (*ShardDrainedError) ProtoMessage()    {}
+func (*ShardDrainedError) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0055bfd59dff1f95, []int{4}
+}
+func (m *ShardDrainedError) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ShardDrainedError) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ShardDrainedError.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ShardDrainedError) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ShardDrainedError.Merge(m, src)
+}
+func (m *ShardDrainedError) XXX_Size() int {
+	return m.Size()
+}
+func (m *ShardDrainedError) XXX_DiscardUnknown() {
+	xxx_messageInfo_ShardDrainedError.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ShardDrainedError proto.InternalMessageInfo
+
+func (m *ShardDrainedError) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *ShardDrainedError) GetShardKey() string {
+	if m != nil {
+		return m.ShardKey
+	}
+	return ""
+}
+
 type GetNamespaceStateRequest struct {
 	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -255,7 +310,7 @@ func (m *GetNamespaceStateRequest) Reset()         { *m = GetNamespaceStateReque
 func (m *GetNamespaceStateRequest) String() string { return proto.CompactTextString(m) }
 func (*GetNamespaceStateRequest) ProtoMessage()    {}
 func (*GetNamespaceStateRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0055bfd59dff1f95, []int{4}
+	return fileDescriptor_0055bfd59dff1f95, []int{5}
 }
 func (m *GetNamespaceStateRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -303,7 +358,7 @@ func (m *GetNamespaceStateResponse) Reset()         { *m = GetNamespaceStateResp
 func (m *GetNamespaceStateResponse) String() string { return proto.CompactTextString(m) }
 func (*GetNamespaceStateResponse) ProtoMessage()    {}
 func (*GetNamespaceStateResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0055bfd59dff1f95, []int{5}
+	return fileDescriptor_0055bfd59dff1f95, []int{6}
 }
 func (m *GetNamespaceStateResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -361,7 +416,7 @@ func (m *NamespaceExecutorState) Reset()         { *m = NamespaceExecutorState{}
 func (m *NamespaceExecutorState) String() string { return proto.CompactTextString(m) }
 func (*NamespaceExecutorState) ProtoMessage()    {}
 func (*NamespaceExecutorState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0055bfd59dff1f95, []int{6}
+	return fileDescriptor_0055bfd59dff1f95, []int{7}
 }
 func (m *NamespaceExecutorState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -439,7 +494,7 @@ func (m *AssignedShardState) Reset()         { *m = AssignedShardState{} }
 func (m *AssignedShardState) String() string { return proto.CompactTextString(m) }
 func (*AssignedShardState) ProtoMessage()    {}
 func (*AssignedShardState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0055bfd59dff1f95, []int{7}
+	return fileDescriptor_0055bfd59dff1f95, []int{8}
 }
 func (m *AssignedShardState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -500,7 +555,7 @@ func (m *WatchNamespaceStateRequest) Reset()         { *m = WatchNamespaceStateR
 func (m *WatchNamespaceStateRequest) String() string { return proto.CompactTextString(m) }
 func (*WatchNamespaceStateRequest) ProtoMessage()    {}
 func (*WatchNamespaceStateRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0055bfd59dff1f95, []int{8}
+	return fileDescriptor_0055bfd59dff1f95, []int{9}
 }
 func (m *WatchNamespaceStateRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -548,7 +603,7 @@ func (m *WatchNamespaceStateResponse) Reset()         { *m = WatchNamespaceState
 func (m *WatchNamespaceStateResponse) String() string { return proto.CompactTextString(m) }
 func (*WatchNamespaceStateResponse) ProtoMessage()    {}
 func (*WatchNamespaceStateResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0055bfd59dff1f95, []int{9}
+	return fileDescriptor_0055bfd59dff1f95, []int{10}
 }
 func (m *WatchNamespaceStateResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -597,7 +652,7 @@ func (m *ExecutorInfo) Reset()         { *m = ExecutorInfo{} }
 func (m *ExecutorInfo) String() string { return proto.CompactTextString(m) }
 func (*ExecutorInfo) ProtoMessage()    {}
 func (*ExecutorInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0055bfd59dff1f95, []int{10}
+	return fileDescriptor_0055bfd59dff1f95, []int{11}
 }
 func (m *ExecutorInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -658,7 +713,7 @@ func (m *Shard) Reset()         { *m = Shard{} }
 func (m *Shard) String() string { return proto.CompactTextString(m) }
 func (*Shard) ProtoMessage()    {}
 func (*Shard) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0055bfd59dff1f95, []int{11}
+	return fileDescriptor_0055bfd59dff1f95, []int{12}
 }
 func (m *Shard) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -694,12 +749,322 @@ func (m *Shard) GetShardKey() string {
 	return ""
 }
 
+type DrainShardsRequest struct {
+	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	ShardKeys            []string `protobuf:"bytes,2,rep,name=shard_keys,json=shardKeys,proto3" json:"shard_keys,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DrainShardsRequest) Reset()         { *m = DrainShardsRequest{} }
+func (m *DrainShardsRequest) String() string { return proto.CompactTextString(m) }
+func (*DrainShardsRequest) ProtoMessage()    {}
+func (*DrainShardsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0055bfd59dff1f95, []int{13}
+}
+func (m *DrainShardsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DrainShardsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DrainShardsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DrainShardsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DrainShardsRequest.Merge(m, src)
+}
+func (m *DrainShardsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *DrainShardsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DrainShardsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DrainShardsRequest proto.InternalMessageInfo
+
+func (m *DrainShardsRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *DrainShardsRequest) GetShardKeys() []string {
+	if m != nil {
+		return m.ShardKeys
+	}
+	return nil
+}
+
+type DrainShardsResponse struct {
+	// shard_keys that are currently drained for the namespace after this call
+	// (includes shards that were already drained before the call).
+	DrainedShardKeys     []string `protobuf:"bytes,1,rep,name=drained_shard_keys,json=drainedShardKeys,proto3" json:"drained_shard_keys,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DrainShardsResponse) Reset()         { *m = DrainShardsResponse{} }
+func (m *DrainShardsResponse) String() string { return proto.CompactTextString(m) }
+func (*DrainShardsResponse) ProtoMessage()    {}
+func (*DrainShardsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0055bfd59dff1f95, []int{14}
+}
+func (m *DrainShardsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DrainShardsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DrainShardsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DrainShardsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DrainShardsResponse.Merge(m, src)
+}
+func (m *DrainShardsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *DrainShardsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DrainShardsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DrainShardsResponse proto.InternalMessageInfo
+
+func (m *DrainShardsResponse) GetDrainedShardKeys() []string {
+	if m != nil {
+		return m.DrainedShardKeys
+	}
+	return nil
+}
+
+type UndrainShardsRequest struct {
+	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	ShardKeys            []string `protobuf:"bytes,2,rep,name=shard_keys,json=shardKeys,proto3" json:"shard_keys,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *UndrainShardsRequest) Reset()         { *m = UndrainShardsRequest{} }
+func (m *UndrainShardsRequest) String() string { return proto.CompactTextString(m) }
+func (*UndrainShardsRequest) ProtoMessage()    {}
+func (*UndrainShardsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0055bfd59dff1f95, []int{15}
+}
+func (m *UndrainShardsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UndrainShardsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UndrainShardsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UndrainShardsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UndrainShardsRequest.Merge(m, src)
+}
+func (m *UndrainShardsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *UndrainShardsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_UndrainShardsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UndrainShardsRequest proto.InternalMessageInfo
+
+func (m *UndrainShardsRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *UndrainShardsRequest) GetShardKeys() []string {
+	if m != nil {
+		return m.ShardKeys
+	}
+	return nil
+}
+
+type UndrainShardsResponse struct {
+	// shard_keys that were actually removed from the drained list by this call.
+	UndrainedShardKeys   []string `protobuf:"bytes,1,rep,name=undrained_shard_keys,json=undrainedShardKeys,proto3" json:"undrained_shard_keys,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *UndrainShardsResponse) Reset()         { *m = UndrainShardsResponse{} }
+func (m *UndrainShardsResponse) String() string { return proto.CompactTextString(m) }
+func (*UndrainShardsResponse) ProtoMessage()    {}
+func (*UndrainShardsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0055bfd59dff1f95, []int{16}
+}
+func (m *UndrainShardsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UndrainShardsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UndrainShardsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UndrainShardsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UndrainShardsResponse.Merge(m, src)
+}
+func (m *UndrainShardsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *UndrainShardsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_UndrainShardsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UndrainShardsResponse proto.InternalMessageInfo
+
+func (m *UndrainShardsResponse) GetUndrainedShardKeys() []string {
+	if m != nil {
+		return m.UndrainedShardKeys
+	}
+	return nil
+}
+
+type GetDrainedShardsRequest struct {
+	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetDrainedShardsRequest) Reset()         { *m = GetDrainedShardsRequest{} }
+func (m *GetDrainedShardsRequest) String() string { return proto.CompactTextString(m) }
+func (*GetDrainedShardsRequest) ProtoMessage()    {}
+func (*GetDrainedShardsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0055bfd59dff1f95, []int{17}
+}
+func (m *GetDrainedShardsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetDrainedShardsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetDrainedShardsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetDrainedShardsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetDrainedShardsRequest.Merge(m, src)
+}
+func (m *GetDrainedShardsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetDrainedShardsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetDrainedShardsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetDrainedShardsRequest proto.InternalMessageInfo
+
+func (m *GetDrainedShardsRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+type GetDrainedShardsResponse struct {
+	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	ShardKeys            []string `protobuf:"bytes,2,rep,name=shard_keys,json=shardKeys,proto3" json:"shard_keys,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetDrainedShardsResponse) Reset()         { *m = GetDrainedShardsResponse{} }
+func (m *GetDrainedShardsResponse) String() string { return proto.CompactTextString(m) }
+func (*GetDrainedShardsResponse) ProtoMessage()    {}
+func (*GetDrainedShardsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0055bfd59dff1f95, []int{18}
+}
+func (m *GetDrainedShardsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetDrainedShardsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetDrainedShardsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetDrainedShardsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetDrainedShardsResponse.Merge(m, src)
+}
+func (m *GetDrainedShardsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetDrainedShardsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetDrainedShardsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetDrainedShardsResponse proto.InternalMessageInfo
+
+func (m *GetDrainedShardsResponse) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *GetDrainedShardsResponse) GetShardKeys() []string {
+	if m != nil {
+		return m.ShardKeys
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*GetShardOwnerRequest)(nil), "uber.cadence.sharddistributor.v1.GetShardOwnerRequest")
 	proto.RegisterType((*GetShardOwnerResponse)(nil), "uber.cadence.sharddistributor.v1.GetShardOwnerResponse")
 	proto.RegisterMapType((map[string]string)(nil), "uber.cadence.sharddistributor.v1.GetShardOwnerResponse.MetadataEntry")
 	proto.RegisterType((*NamespaceNotFoundError)(nil), "uber.cadence.sharddistributor.v1.NamespaceNotFoundError")
 	proto.RegisterType((*ShardNotFoundError)(nil), "uber.cadence.sharddistributor.v1.ShardNotFoundError")
+	proto.RegisterType((*ShardDrainedError)(nil), "uber.cadence.sharddistributor.v1.ShardDrainedError")
 	proto.RegisterType((*GetNamespaceStateRequest)(nil), "uber.cadence.sharddistributor.v1.GetNamespaceStateRequest")
 	proto.RegisterType((*GetNamespaceStateResponse)(nil), "uber.cadence.sharddistributor.v1.GetNamespaceStateResponse")
 	proto.RegisterType((*NamespaceExecutorState)(nil), "uber.cadence.sharddistributor.v1.NamespaceExecutorState")
@@ -710,6 +1075,12 @@ func init() {
 	proto.RegisterType((*ExecutorInfo)(nil), "uber.cadence.sharddistributor.v1.ExecutorInfo")
 	proto.RegisterMapType((map[string]string)(nil), "uber.cadence.sharddistributor.v1.ExecutorInfo.MetadataEntry")
 	proto.RegisterType((*Shard)(nil), "uber.cadence.sharddistributor.v1.Shard")
+	proto.RegisterType((*DrainShardsRequest)(nil), "uber.cadence.sharddistributor.v1.DrainShardsRequest")
+	proto.RegisterType((*DrainShardsResponse)(nil), "uber.cadence.sharddistributor.v1.DrainShardsResponse")
+	proto.RegisterType((*UndrainShardsRequest)(nil), "uber.cadence.sharddistributor.v1.UndrainShardsRequest")
+	proto.RegisterType((*UndrainShardsResponse)(nil), "uber.cadence.sharddistributor.v1.UndrainShardsResponse")
+	proto.RegisterType((*GetDrainedShardsRequest)(nil), "uber.cadence.sharddistributor.v1.GetDrainedShardsRequest")
+	proto.RegisterType((*GetDrainedShardsResponse)(nil), "uber.cadence.sharddistributor.v1.GetDrainedShardsResponse")
 }
 
 func init() {
@@ -717,56 +1088,66 @@ func init() {
 }
 
 var fileDescriptor_0055bfd59dff1f95 = []byte{
-	// 779 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0x4d, 0x6f, 0xd3, 0x4a,
-	0x14, 0xd5, 0x24, 0xaf, 0x55, 0x73, 0xfb, 0xda, 0xd7, 0x4e, 0xfb, 0x90, 0x71, 0x51, 0x1b, 0x45,
-	0x48, 0x74, 0x53, 0xbb, 0x0d, 0xa8, 0x54, 0x2d, 0x15, 0x2a, 0x22, 0xfd, 0x10, 0xb4, 0x05, 0x17,
-	0x01, 0x02, 0x21, 0x6b, 0x12, 0x4f, 0x13, 0xab, 0xb1, 0x27, 0x78, 0xc6, 0x29, 0xdd, 0xb1, 0x63,
-	0xc3, 0x06, 0x89, 0xdf, 0xc3, 0x12, 0xb1, 0x84, 0x7f, 0x80, 0xba, 0xe5, 0x4f, 0x20, 0x8f, 0xed,
-	0xc4, 0x49, 0xd3, 0x38, 0x4d, 0x77, 0xc9, 0x9d, 0x7b, 0xce, 0x3d, 0xbe, 0xf7, 0x5c, 0x7b, 0x40,
-	0xf3, 0xcb, 0xd4, 0xd3, 0x2b, 0xc4, 0xa2, 0x6e, 0x85, 0xea, 0xbc, 0x46, 0x3c, 0xcb, 0xb2, 0xb9,
-	0xf0, 0xec, 0xb2, 0x2f, 0x98, 0xa7, 0x37, 0x57, 0x74, 0x4e, 0xbd, 0xa6, 0x5d, 0xa1, 0x5a, 0xc3,
-	0x63, 0x82, 0xe1, 0x7c, 0x90, 0xaf, 0x45, 0xf9, 0x5a, 0x77, 0xbe, 0xd6, 0x5c, 0x51, 0x17, 0xaa,
-	0x8c, 0x55, 0xeb, 0x54, 0x97, 0xf9, 0x65, 0xff, 0x58, 0x17, 0xb6, 0x43, 0xb9, 0x20, 0x4e, 0x23,
-	0xa4, 0x50, 0xf5, 0xd4, 0x92, 0xf4, 0x03, 0xad, 0x48, 0x3a, 0x09, 0x28, 0x3c, 0x87, 0xd9, 0x1d,
-	0x2a, 0x8e, 0x82, 0xc4, 0xc3, 0x53, 0x97, 0x7a, 0x06, 0x7d, 0xef, 0x53, 0x2e, 0xf0, 0x1c, 0xe4,
-	0x24, 0xda, 0x3c, 0xa1, 0x67, 0x0a, 0xca, 0xa3, 0xc5, 0x9c, 0x31, 0x26, 0x03, 0x4f, 0xe8, 0x19,
-	0xbe, 0x05, 0x39, 0x97, 0x38, 0x94, 0x37, 0x48, 0x85, 0x2a, 0x19, 0x79, 0xd8, 0x0e, 0x14, 0xfe,
-	0x20, 0xf8, 0xbf, 0x8b, 0x93, 0x37, 0x98, 0xcb, 0x29, 0x9e, 0x85, 0x11, 0x16, 0x04, 0x22, 0xc2,
-	0xf0, 0x4f, 0x7f, 0x36, 0x4c, 0x60, 0xcc, 0xa1, 0x82, 0x58, 0x44, 0x10, 0x25, 0x9b, 0xcf, 0x2e,
-	0x8e, 0x17, 0x4b, 0x5a, 0x5a, 0x9f, 0xb4, 0x9e, 0xe5, 0xb5, 0xfd, 0x88, 0xa7, 0xe4, 0x0a, 0xef,
-	0xcc, 0x68, 0xd1, 0xaa, 0x1b, 0x30, 0xd1, 0x71, 0x84, 0xa7, 0x20, 0xdb, 0x7e, 0xec, 0xe0, 0x67,
-	0xa0, 0xbc, 0x49, 0xea, 0x7e, 0xac, 0x2f, 0xfc, 0xb3, 0x9e, 0x59, 0x43, 0x85, 0x55, 0xb8, 0x71,
-	0x10, 0x8b, 0x3d, 0x60, 0x62, 0x9b, 0xf9, 0xae, 0x55, 0xf2, 0x3c, 0xd6, 0xf5, 0x5c, 0xa8, 0xbb,
-	0x4b, 0x87, 0x80, 0xa5, 0xc4, 0x2b, 0x60, 0x3a, 0x87, 0x92, 0xe9, 0x1c, 0x4a, 0x61, 0x0d, 0x94,
-	0x1d, 0x2a, 0x5a, 0x5a, 0x8e, 0x04, 0x11, 0x34, 0x9e, 0x66, 0x7f, 0x29, 0x5f, 0x10, 0xdc, 0xec,
-	0x01, 0x8d, 0x86, 0xd6, 0x5f, 0xd2, 0x4b, 0xc8, 0xc5, 0x8e, 0xe2, 0x4a, 0x46, 0xce, 0x67, 0x2d,
-	0x7d, 0x3e, 0xad, 0x52, 0xa5, 0x08, 0x1b, 0x96, 0x6c, 0x53, 0x15, 0xbe, 0x67, 0x13, 0x7d, 0xed,
-	0xc8, 0xc2, 0x0b, 0x30, 0x1e, 0xe7, 0x99, 0xb6, 0x15, 0x49, 0x82, 0x38, 0xb4, 0x67, 0xe1, 0x5d,
-	0x18, 0xe5, 0x82, 0x08, 0x9f, 0xcb, 0x1e, 0x4d, 0x16, 0x97, 0xd3, 0x05, 0x25, 0x2b, 0xf8, 0xdc,
-	0x88, 0xf0, 0x78, 0x0b, 0x26, 0xeb, 0x84, 0x0b, 0xb3, 0x46, 0x89, 0x27, 0xca, 0x94, 0x08, 0x25,
-	0x9b, 0x47, 0x8b, 0xe3, 0x45, 0x55, 0x0b, 0x17, 0x51, 0x8b, 0x17, 0x51, 0x7b, 0x11, 0x2f, 0xa2,
-	0x31, 0x11, 0x20, 0x76, 0x63, 0x00, 0x2e, 0x27, 0xfc, 0xfb, 0x8f, 0xec, 0xcf, 0xf6, 0xb0, 0xfd,
-	0xb9, 0xcc, 0xc0, 0xf8, 0x1d, 0xfc, 0x47, 0x38, 0xb7, 0xab, 0x2e, 0xb5, 0x4c, 0x49, 0xc7, 0x95,
-	0x11, 0x59, 0xea, 0x5e, 0x7a, 0xa9, 0xad, 0x08, 0x28, 0xcd, 0x18, 0x8e, 0x61, 0x92, 0x24, 0x63,
-	0xfc, 0x7a, 0xfb, 0xf1, 0x0b, 0x01, 0xbe, 0x58, 0xa3, 0xff, 0xfb, 0xc5, 0x84, 0xe9, 0x50, 0x82,
-	0x43, 0x5d, 0x61, 0x76, 0xcc, 0xb2, 0x38, 0xe8, 0x13, 0x05, 0xd0, 0x68, 0x9a, 0x53, 0xa4, 0x2b,
-	0x82, 0x37, 0x61, 0xae, 0xdd, 0xb0, 0x40, 0x8f, 0xe9, 0x30, 0xcb, 0xf4, 0x68, 0xd3, 0xe6, 0x36,
-	0x73, 0xe5, 0x90, 0xb3, 0x86, 0xd2, 0x6a, 0x43, 0x90, 0xb1, 0xcf, 0x2c, 0x23, 0x3a, 0x2f, 0xac,
-	0x83, 0xfa, 0x8a, 0x88, 0x4a, 0x6d, 0x98, 0x65, 0x3b, 0x81, 0xb9, 0x9e, 0xd8, 0x68, 0xdb, 0x9e,
-	0x26, 0xf7, 0x09, 0xc9, 0x21, 0x6a, 0x83, 0xdb, 0x77, 0xcf, 0x3d, 0x66, 0xc9, 0x2d, 0xfa, 0x94,
-	0x81, 0x7f, 0x93, 0x67, 0xe9, 0xbb, 0xf3, 0x3a, 0x61, 0xd7, 0x70, 0x9d, 0x1f, 0x5c, 0xad, 0xfc,
-	0xa5, 0x26, 0x7d, 0x08, 0xa3, 0x91, 0x37, 0xc3, 0xd7, 0xf8, 0x9d, 0x74, 0x5e, 0xe9, 0x17, 0x23,
-	0x82, 0x5d, 0xcf, 0x86, 0xb7, 0x61, 0x44, 0xb2, 0xf5, 0x35, 0x5e, 0xf1, 0x5b, 0x16, 0x66, 0x64,
-	0xda, 0xe3, 0xb6, 0x90, 0xad, 0x67, 0x7b, 0xf8, 0x23, 0x82, 0x89, 0x8e, 0x6f, 0x0a, 0x5e, 0xbd,
-	0xf2, 0x47, 0x48, 0x9a, 0x43, 0xbd, 0x3f, 0xe4, 0xc7, 0x0b, 0x7f, 0x46, 0x30, 0x7d, 0xe1, 0x25,
-	0x8d, 0xd7, 0x07, 0xa2, 0xeb, 0xe9, 0x53, 0x75, 0x63, 0x28, 0x6c, 0x24, 0xe7, 0x2b, 0x82, 0x99,
-	0x1e, 0x3e, 0xc6, 0x03, 0xb8, 0xe5, 0xf2, 0xd5, 0x51, 0x37, 0x87, 0x44, 0x87, 0xa2, 0x96, 0xd1,
-	0x23, 0xfb, 0xc7, 0xf9, 0x3c, 0xfa, 0x79, 0x3e, 0x8f, 0x7e, 0x9f, 0xcf, 0xa3, 0x37, 0x6f, 0xab,
-	0xb6, 0xa8, 0xf9, 0x65, 0xad, 0xc2, 0x9c, 0xf8, 0x4e, 0xb4, 0x74, 0xca, 0xbc, 0x93, 0xe3, 0x3a,
-	0x3b, 0x0d, 0x2f, 0x47, 0x4b, 0x0e, 0x71, 0x49, 0x95, 0x7a, 0xba, 0x56, 0xa5, 0x6e, 0x78, 0xad,
-	0xea, 0x75, 0x6b, 0xda, 0xe8, 0x8e, 0x35, 0x57, 0xca, 0xa3, 0x32, 0xfb, 0xee, 0xdf, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0x46, 0x83, 0xcd, 0xa4, 0xe6, 0x09, 0x00, 0x00,
+	// 941 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0x41, 0x6f, 0xe3, 0x44,
+	0x14, 0xd6, 0x24, 0xb4, 0xda, 0xbc, 0xd2, 0xd2, 0x4e, 0xbb, 0x10, 0x5c, 0xe8, 0x56, 0x16, 0x12,
+	0x3d, 0xb0, 0x76, 0x1b, 0x60, 0xb7, 0xb4, 0xac, 0x50, 0x61, 0xbb, 0xdd, 0x0a, 0xb6, 0xcb, 0xba,
+	0xc0, 0x22, 0x10, 0xb2, 0x26, 0xf1, 0x34, 0xb5, 0x5a, 0x7b, 0x8a, 0x67, 0x9c, 0x52, 0x4e, 0xdc,
+	0x10, 0x12, 0x17, 0x24, 0x7e, 0x13, 0x82, 0x1b, 0xfc, 0x03, 0xd4, 0x2b, 0x7f, 0x02, 0x79, 0x66,
+	0x9c, 0xd8, 0xae, 0x9b, 0x38, 0xe9, 0xde, 0x92, 0x99, 0xf7, 0x7d, 0xef, 0x9b, 0x79, 0xef, 0x9b,
+	0xf1, 0x80, 0x15, 0xb7, 0x69, 0x64, 0x77, 0x88, 0x47, 0xc3, 0x0e, 0xb5, 0xf9, 0x31, 0x89, 0x3c,
+	0xcf, 0xe7, 0x22, 0xf2, 0xdb, 0xb1, 0x60, 0x91, 0xdd, 0xdb, 0xb0, 0x39, 0x8d, 0x7a, 0x7e, 0x87,
+	0x5a, 0x67, 0x11, 0x13, 0x0c, 0xaf, 0x26, 0xf1, 0x96, 0x8e, 0xb7, 0x8a, 0xf1, 0x56, 0x6f, 0xc3,
+	0xb8, 0xd3, 0x65, 0xac, 0x7b, 0x4a, 0x6d, 0x19, 0xdf, 0x8e, 0x8f, 0x6c, 0xe1, 0x07, 0x94, 0x0b,
+	0x12, 0x9c, 0x29, 0x0a, 0xc3, 0x1e, 0x99, 0x92, 0xfe, 0x40, 0x3b, 0x92, 0x4e, 0x02, 0xcc, 0x67,
+	0xb0, 0xb4, 0x47, 0xc5, 0x61, 0x12, 0xf8, 0xf4, 0x3c, 0xa4, 0x91, 0x43, 0xbf, 0x8f, 0x29, 0x17,
+	0x78, 0x19, 0x1a, 0x12, 0xed, 0x9e, 0xd0, 0x8b, 0x26, 0x5a, 0x45, 0x6b, 0x0d, 0xe7, 0x96, 0x1c,
+	0xf8, 0x94, 0x5e, 0xe0, 0x37, 0xa0, 0x11, 0x92, 0x80, 0xf2, 0x33, 0xd2, 0xa1, 0xcd, 0x9a, 0x9c,
+	0x1c, 0x0c, 0x98, 0xff, 0x21, 0xb8, 0x5d, 0xe0, 0xe4, 0x67, 0x2c, 0xe4, 0x14, 0x2f, 0xc1, 0x14,
+	0x4b, 0x06, 0x34, 0xa1, 0xfa, 0x33, 0x9c, 0x0d, 0x13, 0xb8, 0x15, 0x50, 0x41, 0x3c, 0x22, 0x48,
+	0xb3, 0xbe, 0x5a, 0x5f, 0x9b, 0x69, 0xed, 0x5a, 0xa3, 0xf6, 0xc9, 0x2a, 0x4d, 0x6f, 0x3d, 0xd1,
+	0x3c, 0xbb, 0xa1, 0x88, 0x2e, 0x9c, 0x3e, 0xad, 0xb1, 0x0d, 0xb3, 0xb9, 0x29, 0x3c, 0x0f, 0xf5,
+	0xc1, 0xb2, 0x93, 0x9f, 0x89, 0xf2, 0x1e, 0x39, 0x8d, 0x53, 0x7d, 0xea, 0xcf, 0x56, 0x6d, 0x13,
+	0x99, 0xf7, 0xe0, 0xd5, 0x83, 0x54, 0xec, 0x01, 0x13, 0x8f, 0x58, 0x1c, 0x7a, 0xbb, 0x51, 0xc4,
+	0x0a, 0xeb, 0x42, 0xc5, 0x5d, 0x7a, 0x0a, 0x58, 0x4a, 0x1c, 0x03, 0x93, 0x2f, 0x4a, 0x2d, 0x5f,
+	0x14, 0xf3, 0x00, 0x16, 0x24, 0xe1, 0xc3, 0x88, 0xf8, 0x21, 0xbd, 0x39, 0xdf, 0x26, 0x34, 0xf7,
+	0xa8, 0xe8, 0xaf, 0xed, 0x50, 0x10, 0x41, 0xd3, 0xee, 0x18, 0xbe, 0xb4, 0xdf, 0x10, 0xbc, 0x5e,
+	0x02, 0xd5, 0x4d, 0x30, 0x5c, 0xd2, 0x57, 0xd0, 0x48, 0x3b, 0x94, 0x37, 0x6b, 0xb2, 0xde, 0x9b,
+	0xa3, 0xeb, 0xdd, 0x4f, 0xb5, 0xab, 0xb1, 0x2a, 0xe5, 0x80, 0xca, 0xfc, 0xa3, 0x9e, 0xa9, 0x53,
+	0x2e, 0x0a, 0xdf, 0x81, 0x99, 0x34, 0xce, 0xf5, 0x3d, 0x2d, 0x09, 0xd2, 0xa1, 0x7d, 0x0f, 0x3f,
+	0x86, 0x69, 0x2e, 0x88, 0x88, 0xb9, 0xdc, 0xa3, 0xb9, 0xd6, 0xfa, 0x68, 0x41, 0xd9, 0x0c, 0x31,
+	0x77, 0x34, 0x1e, 0xef, 0xc0, 0xdc, 0x29, 0xe1, 0xc2, 0x3d, 0xa6, 0x24, 0x12, 0x6d, 0x4a, 0x44,
+	0xb3, 0xbe, 0x8a, 0xd6, 0x66, 0x5a, 0x86, 0xa5, 0x8c, 0x6d, 0xa5, 0xc6, 0xb6, 0xbe, 0x48, 0x8d,
+	0xed, 0xcc, 0x26, 0x88, 0xc7, 0x29, 0x00, 0xb7, 0x33, 0x7e, 0x78, 0x49, 0xee, 0xcf, 0xa3, 0x49,
+	0xf7, 0xe7, 0x3a, 0x43, 0xe0, 0xef, 0xe0, 0x15, 0xc2, 0xb9, 0xdf, 0x0d, 0xa9, 0xe7, 0x4a, 0x3a,
+	0xde, 0x9c, 0x92, 0xa9, 0xde, 0x1b, 0x9d, 0x6a, 0x47, 0x03, 0x65, 0x2f, 0xaa, 0x32, 0xcc, 0x91,
+	0xec, 0x18, 0xbf, 0x99, 0xdf, 0xfe, 0x41, 0x80, 0xaf, 0xe6, 0x18, 0x7e, 0x5e, 0xb9, 0xb0, 0xa0,
+	0x24, 0x04, 0x34, 0x14, 0x6e, 0xae, 0x96, 0xad, 0xaa, 0x2b, 0x4a, 0xa0, 0xba, 0x9a, 0xf3, 0xa4,
+	0x30, 0x82, 0x1f, 0xc0, 0xf2, 0x60, 0xc3, 0x12, 0x3d, 0x6e, 0xc0, 0x3c, 0x37, 0xa2, 0x3d, 0x9f,
+	0xfb, 0x2c, 0x94, 0x45, 0xae, 0x3b, 0xcd, 0xfe, 0x36, 0x24, 0x11, 0x4f, 0x98, 0xe7, 0xe8, 0x79,
+	0x73, 0x0b, 0x8c, 0xe7, 0x44, 0x74, 0x8e, 0x27, 0x31, 0xdb, 0x09, 0x2c, 0x97, 0x62, 0xb5, 0xdb,
+	0x3e, 0xcb, 0xfa, 0x09, 0xc9, 0x22, 0x5a, 0xd5, 0xdb, 0x77, 0x3f, 0x3c, 0x62, 0x59, 0x17, 0xfd,
+	0x5c, 0x83, 0x97, 0xb3, 0x73, 0xa3, 0xbd, 0xf3, 0x75, 0xa6, 0x5d, 0x95, 0x9d, 0x3f, 0x1c, 0x2f,
+	0xfd, 0xb5, 0x4d, 0xfa, 0x11, 0x4c, 0xeb, 0xde, 0x54, 0xd7, 0xc2, 0xdb, 0xa3, 0x79, 0x65, 0xbf,
+	0x38, 0x1a, 0x76, 0xb3, 0x36, 0x7c, 0x0b, 0xa6, 0x24, 0xdb, 0xd0, 0xc6, 0x33, 0x9f, 0x01, 0x96,
+	0xc7, 0xb1, 0x6a, 0xfc, 0x4a, 0x05, 0xc5, 0x6f, 0x02, 0xf4, 0x09, 0xd5, 0x11, 0xd8, 0x70, 0x1a,
+	0x29, 0x23, 0x37, 0x3f, 0x81, 0xc5, 0x1c, 0xa5, 0xae, 0xf3, 0x3b, 0x80, 0x3d, 0x75, 0xf0, 0xbb,
+	0x19, 0x34, 0x92, 0xe8, 0x79, 0x3d, 0x73, 0xd8, 0x27, 0x39, 0x84, 0xa5, 0x2f, 0x43, 0xef, 0x05,
+	0x2b, 0xdb, 0x87, 0xdb, 0x05, 0x52, 0xad, 0x6d, 0x1d, 0x96, 0xe2, 0xf0, 0x5a, 0x75, 0xb8, 0x3f,
+	0x37, 0xd0, 0x77, 0x1f, 0x5e, 0xdb, 0xa3, 0xe2, 0x61, 0x66, 0xb8, 0x9a, 0x44, 0xf3, 0xb9, 0xbc,
+	0xb4, 0x0a, 0xc0, 0x4a, 0x17, 0xcf, 0xf0, 0xc5, 0xb5, 0xfe, 0x9a, 0x86, 0x45, 0x75, 0xbd, 0x0e,
+	0x5a, 0x6a, 0xe7, 0xf3, 0x7d, 0xfc, 0x13, 0x82, 0xd9, 0xdc, 0xd7, 0x06, 0xbe, 0x37, 0xf6, 0xe7,
+	0x89, 0x5c, 0x98, 0x71, 0x7f, 0xc2, 0xcf, 0x1a, 0xfc, 0x2b, 0x82, 0x85, 0x2b, 0xd7, 0x2d, 0xde,
+	0xaa, 0x44, 0x57, 0x7a, 0xe2, 0x18, 0xdb, 0x13, 0x61, 0xb5, 0x9c, 0xdf, 0x11, 0x2c, 0x96, 0x9c,
+	0x48, 0xb8, 0x82, 0xef, 0xaf, 0x3f, 0x04, 0x8d, 0x07, 0x13, 0xa2, 0x95, 0xa8, 0x75, 0x84, 0x7f,
+	0x84, 0x99, 0x8c, 0x6f, 0x70, 0x85, 0x9b, 0xec, 0xaa, 0x73, 0x8d, 0xf7, 0xc7, 0x44, 0xe9, 0x2d,
+	0x49, 0x9a, 0x24, 0x67, 0x8d, 0x2a, 0x4d, 0x52, 0x66, 0xd0, 0x2a, 0x4d, 0x52, 0xee, 0xc1, 0x5f,
+	0x10, 0xcc, 0x17, 0x9d, 0x81, 0x3f, 0xa8, 0x54, 0xe7, 0x32, 0x1b, 0x1a, 0x5b, 0x93, 0x40, 0x95,
+	0x96, 0x8f, 0xfd, 0x3f, 0x2f, 0x57, 0xd0, 0xdf, 0x97, 0x2b, 0xe8, 0xdf, 0xcb, 0x15, 0xf4, 0xcd,
+	0xb7, 0x5d, 0x5f, 0x1c, 0xc7, 0x6d, 0xab, 0xc3, 0x82, 0xf4, 0xe1, 0x72, 0xf7, 0x9c, 0x45, 0x27,
+	0x47, 0xa7, 0xec, 0x5c, 0xbd, 0x60, 0xee, 0x06, 0x24, 0x24, 0x5d, 0x1a, 0xd9, 0x56, 0x97, 0x86,
+	0xea, 0xed, 0x53, 0xf6, 0xb4, 0xd9, 0x2e, 0x8e, 0xf5, 0x36, 0xda, 0xd3, 0x32, 0xfa, 0xdd, 0xff,
+	0x03, 0x00, 0x00, 0xff, 0xff, 0x15, 0xba, 0x71, 0x71, 0x8b, 0x0d, 0x00, 0x00,
 }
 
 func (m *GetShardOwnerRequest) Marshal() (dAtA []byte, err error) {
@@ -920,6 +1301,47 @@ func (m *ShardNotFoundError) MarshalTo(dAtA []byte) (int, error) {
 }
 
 func (m *ShardNotFoundError) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.ShardKey) > 0 {
+		i -= len(m.ShardKey)
+		copy(dAtA[i:], m.ShardKey)
+		i = encodeVarintService(dAtA, i, uint64(len(m.ShardKey)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ShardDrainedError) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ShardDrainedError) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ShardDrainedError) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1331,6 +1753,241 @@ func (m *Shard) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *DrainShardsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DrainShardsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DrainShardsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.ShardKeys) > 0 {
+		for iNdEx := len(m.ShardKeys) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ShardKeys[iNdEx])
+			copy(dAtA[i:], m.ShardKeys[iNdEx])
+			i = encodeVarintService(dAtA, i, uint64(len(m.ShardKeys[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DrainShardsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DrainShardsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DrainShardsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.DrainedShardKeys) > 0 {
+		for iNdEx := len(m.DrainedShardKeys) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.DrainedShardKeys[iNdEx])
+			copy(dAtA[i:], m.DrainedShardKeys[iNdEx])
+			i = encodeVarintService(dAtA, i, uint64(len(m.DrainedShardKeys[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UndrainShardsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UndrainShardsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UndrainShardsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.ShardKeys) > 0 {
+		for iNdEx := len(m.ShardKeys) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ShardKeys[iNdEx])
+			copy(dAtA[i:], m.ShardKeys[iNdEx])
+			i = encodeVarintService(dAtA, i, uint64(len(m.ShardKeys[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UndrainShardsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UndrainShardsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UndrainShardsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.UndrainedShardKeys) > 0 {
+		for iNdEx := len(m.UndrainedShardKeys) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.UndrainedShardKeys[iNdEx])
+			copy(dAtA[i:], m.UndrainedShardKeys[iNdEx])
+			i = encodeVarintService(dAtA, i, uint64(len(m.UndrainedShardKeys[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetDrainedShardsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetDrainedShardsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetDrainedShardsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetDrainedShardsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetDrainedShardsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetDrainedShardsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.ShardKeys) > 0 {
+		for iNdEx := len(m.ShardKeys) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ShardKeys[iNdEx])
+			copy(dAtA[i:], m.ShardKeys[iNdEx])
+			i = encodeVarintService(dAtA, i, uint64(len(m.ShardKeys[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
 	offset -= sovService(v)
 	base := offset
@@ -1407,6 +2064,26 @@ func (m *NamespaceNotFoundError) Size() (n int) {
 }
 
 func (m *ShardNotFoundError) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	l = len(m.ShardKey)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ShardDrainedError) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1596,6 +2273,124 @@ func (m *Shard) Size() (n int) {
 	l = len(m.ShardKey)
 	if l > 0 {
 		n += 1 + l + sovService(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *DrainShardsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	if len(m.ShardKeys) > 0 {
+		for _, s := range m.ShardKeys {
+			l = len(s)
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *DrainShardsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.DrainedShardKeys) > 0 {
+		for _, s := range m.DrainedShardKeys {
+			l = len(s)
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *UndrainShardsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	if len(m.ShardKeys) > 0 {
+		for _, s := range m.ShardKeys {
+			l = len(s)
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *UndrainShardsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.UndrainedShardKeys) > 0 {
+		for _, s := range m.UndrainedShardKeys {
+			l = len(s)
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetDrainedShardsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetDrainedShardsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	if len(m.ShardKeys) > 0 {
+		for _, s := range m.ShardKeys {
+			l = len(s)
+			n += 1 + l + sovService(uint64(l))
+		}
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -2076,6 +2871,121 @@ func (m *ShardNotFoundError) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: ShardNotFoundError: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ShardKey", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ShardKey = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ShardDrainedError) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ShardDrainedError: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ShardDrainedError: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -3256,6 +4166,600 @@ func (m *Shard) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.ShardKey = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DrainShardsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DrainShardsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DrainShardsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ShardKeys", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ShardKeys = append(m.ShardKeys, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DrainShardsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DrainShardsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DrainShardsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DrainedShardKeys", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DrainedShardKeys = append(m.DrainedShardKeys, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UndrainShardsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UndrainShardsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UndrainShardsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ShardKeys", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ShardKeys = append(m.ShardKeys, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UndrainShardsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UndrainShardsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UndrainShardsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UndrainedShardKeys", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UndrainedShardKeys = append(m.UndrainedShardKeys, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetDrainedShardsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetDrainedShardsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetDrainedShardsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetDrainedShardsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetDrainedShardsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetDrainedShardsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ShardKeys", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ShardKeys = append(m.ShardKeys, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

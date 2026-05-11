@@ -6,6 +6,9 @@ const (
 	ShardDistributorSpectatorGetShardOwnerOperationTagName       = "ShardDistributorSpectatorGetShardOwner"
 	ShardDistributorSpectatorGetNamespaceStateOperationTagName   = "ShardDistributorSpectatorGetNamespaceState"
 	ShardDistributorSpectatorWatchNamespaceStateOperationTagName = "ShardDistributorSpectatorWatchNamespaceState"
+	ShardDistributorSpectatorDrainShardsOperationTagName         = "ShardDistributorSpectatorDrainShards"
+	ShardDistributorSpectatorUndrainShardsOperationTagName       = "ShardDistributorSpectatorUndrainShards"
+	ShardDistributorSpectatorGetDrainedShardsOperationTagName    = "ShardDistributorSpectatorGetDrainedShards"
 
 	// Counter metrics
 	ShardDistributorSpectatorClientRequests   = "shard_distributor_spectator_client_requests"

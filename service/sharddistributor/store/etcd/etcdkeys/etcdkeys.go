@@ -92,3 +92,31 @@ func ParseExecutorKey(prefix, namespace, key string) (executorID string, keyType
 func BuildMetadataKey(prefix string, namespace, executorID, metadataKey string) string {
 	return fmt.Sprintf("%s/%s", BuildExecutorKey(prefix, namespace, executorID, ExecutorMetadataKey), metadataKey)
 }
+
+// BuildDrainedShardsPrefix constructs the etcd key prefix for drained shards within a given namespace.
+// Each drained shard is stored as an empty value at <prefix>/<namespace>/drained_shards/<shardID>
+// so individual shards can be added/removed atomically without read-modify-write loops.
+// result: <prefix>/<namespace>/drained_shards/
+func BuildDrainedShardsPrefix(prefix, namespace string) string {
+	return fmt.Sprintf("%s/drained_shards/", BuildNamespacePrefix(prefix, namespace))
+}
+
+// BuildDrainedShardKey constructs the etcd key for a specific drained shard within a namespace.
+// result: <prefix>/<namespace>/drained_shards/<shardID>
+func BuildDrainedShardKey(prefix, namespace, shardID string) string {
+	return fmt.Sprintf("%s%s", BuildDrainedShardsPrefix(prefix, namespace), shardID)
+}
+
+// ParseDrainedShardKey extracts the shard ID from a drained-shard etcd key.
+// Expected format: <prefix>/<namespace>/drained_shards/<shardID>
+func ParseDrainedShardKey(prefix, namespace, key string) (shardID string, err error) {
+	expectedPrefix := BuildDrainedShardsPrefix(prefix, namespace)
+	if !strings.HasPrefix(key, expectedPrefix) {
+		return "", fmt.Errorf("key '%s' does not have expected drained shards prefix '%s'", key, expectedPrefix)
+	}
+	shardID = strings.TrimPrefix(key, expectedPrefix)
+	if shardID == "" || strings.Contains(shardID, "/") {
+		return "", fmt.Errorf("unexpected drained shard key format: %s", key)
+	}
+	return shardID, nil
+}

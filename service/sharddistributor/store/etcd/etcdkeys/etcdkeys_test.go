@@ -58,3 +58,64 @@ func TestParseExecutorKey_InvalidKeyType(t *testing.T) {
 	_, _, err := ParseExecutorKey("/cadence", "test-ns", key)
 	assert.ErrorContains(t, err, "invalid executor key type: invalid_type")
 }
+
+func TestBuildDrainedShardsPrefix(t *testing.T) {
+	got := BuildDrainedShardsPrefix("/cadence", "test-ns")
+	assert.Equal(t, "/cadence/test-ns/drained_shards/", got)
+}
+
+func TestBuildDrainedShardKey(t *testing.T) {
+	got := BuildDrainedShardKey("/cadence", "test-ns", "shard-1")
+	assert.Equal(t, "/cadence/test-ns/drained_shards/shard-1", got)
+}
+
+func TestParseDrainedShardKey(t *testing.T) {
+	tests := []struct {
+		name        string
+		key         string
+		wantShardID string
+		wantErr     string
+	}{
+		{
+			name:        "valid",
+			key:         "/cadence/test-ns/drained_shards/shard-42",
+			wantShardID: "shard-42",
+		},
+		{
+			name:    "wrong prefix",
+			key:     "/wrong/prefix/drained_shards/x",
+			wantErr: "does not have expected drained shards prefix",
+		},
+		{
+			name:    "empty shard id",
+			key:     "/cadence/test-ns/drained_shards/",
+			wantErr: "unexpected drained shard key format",
+		},
+		{
+			name:    "extra segment",
+			key:     "/cadence/test-ns/drained_shards/shard/extra",
+			wantErr: "unexpected drained shard key format",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			shardID, err := ParseDrainedShardKey("/cadence", "test-ns", tc.key)
+			if tc.wantErr != "" {
+				assert.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tc.wantShardID, shardID)
+		})
+	}
+}
+
+func TestRoundtripDrainedShardKey(t *testing.T) {
+	for _, shardID := range []string{"0", "shard-1", "fixed-32", "abc.def"} {
+		key := BuildDrainedShardKey("/cadence", "test-ns", shardID)
+		got, err := ParseDrainedShardKey("/cadence", "test-ns", key)
+		assert.NoError(t, err)
+		assert.Equal(t, shardID, got)
+	}
+}
