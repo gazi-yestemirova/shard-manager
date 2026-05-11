@@ -31,6 +31,11 @@ func (g GRPCHandler) GetShardOwner(ctx context.Context, request *sharddistributo
 	return proto.FromShardDistributorGetShardOwnerResponse(response), proto.FromError(err)
 }
 
+func (g GRPCHandler) InspectShard(ctx context.Context, request *sharddistributorv1.InspectShardRequest) (*sharddistributorv1.InspectShardResponse, error) {
+	response, err := g.h.InspectShard(ctx, proto.ToShardDistributorInspectShardRequest(request))
+	return proto.FromShardDistributorInspectShardResponse(response), proto.FromError(err)
+}
+
 func (g GRPCHandler) WatchNamespaceState(request *sharddistributorv1.WatchNamespaceStateRequest, server sharddistributorv1.ShardDistributorAPIServiceWatchNamespaceStateYARPCServer) error {
 	err := g.h.WatchNamespaceState(proto.ToShardDistributorWatchNamespaceStateRequest(request), &watchnamespacestateServer{server: server})
 	return err

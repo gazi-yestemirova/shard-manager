@@ -455,6 +455,7 @@ var (
 	MatchingClientOperationRefreshTaskListPartitionConfig = clientOperation("matching-refresh-task-list-partition-config")
 
 	ShardDistributorClientOperationGetShardOwner       = clientOperation("shard-distributor-get-shard-owner")
+	ShardDistributorClientOperationInspectShard        = clientOperation("shard-distributor-inspect-shard")
 	ShardDistributorClientOperationGetNamespaceState   = clientOperation("shard-distributor-get-namespace-state")
 	ShardDistributorClientOperationWatchNamespaceState = clientOperation("shard-distributor-watch-namespace-state")
 	ShardDistributorExecutorClientOperationHeartbeat   = clientOperation("shard-distributor-executor-heartbeat")
