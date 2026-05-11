@@ -39,6 +39,7 @@ import (
 
 type Client interface {
 	GetShardOwner(context.Context, *types.GetShardOwnerRequest, ...yarpc.CallOption) (*types.GetShardOwnerResponse, error)
+	InspectShard(context.Context, *types.GetShardOwnerRequest, ...yarpc.CallOption) (*types.GetShardOwnerResponse, error)
 	GetNamespaceState(context.Context, *types.GetNamespaceStateRequest, ...yarpc.CallOption) (*types.GetNamespaceStateResponse, error)
 	WatchNamespaceState(context.Context, *types.WatchNamespaceStateRequest, ...yarpc.CallOption) (WatchNamespaceStateClient, error)
 }

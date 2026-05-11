@@ -4,6 +4,7 @@ const (
 	// Operation tag names for ShardDistributorSpectator metrics
 	ShardDistributorSpectatorOperationTagName                    = "ShardDistributorSpectator"
 	ShardDistributorSpectatorGetShardOwnerOperationTagName       = "ShardDistributorSpectatorGetShardOwner"
+	ShardDistributorSpectatorInspectShardOperationTagName        = "ShardDistributorSpectatorInspectShard"
 	ShardDistributorSpectatorGetNamespaceStateOperationTagName   = "ShardDistributorSpectatorGetNamespaceState"
 	ShardDistributorSpectatorWatchNamespaceStateOperationTagName = "ShardDistributorSpectatorWatchNamespaceState"
 

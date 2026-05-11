@@ -73,6 +73,52 @@ func ToShardDistributorGetShardOwnerResponse(t *sharddistributorv1.GetShardOwner
 	}
 }
 
+// ToShardDistributorInspectShardRequest converts a sharddistributor.InspectShardRequest to a types.GetShardOwnerRequest.
+func ToShardDistributorInspectShardRequest(t *sharddistributorv1.InspectShardRequest) *types.GetShardOwnerRequest {
+	if t == nil {
+		return nil
+	}
+	return &types.GetShardOwnerRequest{
+		ShardKey:  t.GetShardKey(),
+		Namespace: t.GetNamespace(),
+	}
+}
+
+// FromShardDistributorInspectShardRequest converts a types.GetShardOwnerRequest to a sharddistributor.InspectShardRequest.
+func FromShardDistributorInspectShardRequest(t *types.GetShardOwnerRequest) *sharddistributorv1.InspectShardRequest {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.InspectShardRequest{
+		ShardKey:  t.GetShardKey(),
+		Namespace: t.GetNamespace(),
+	}
+}
+
+// FromShardDistributorInspectShardResponse converts a types.GetShardOwnerResponse to a sharddistributor.InspectShardResponse.
+func FromShardDistributorInspectShardResponse(t *types.GetShardOwnerResponse) *sharddistributorv1.InspectShardResponse {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.InspectShardResponse{
+		Owner:     t.GetOwner(),
+		Namespace: t.GetNamespace(),
+		Metadata:  t.GetMetadata(),
+	}
+}
+
+// ToShardDistributorInspectShardResponse converts a sharddistributor.InspectShardResponse to a types.GetShardOwnerResponse.
+func ToShardDistributorInspectShardResponse(t *sharddistributorv1.InspectShardResponse) *types.GetShardOwnerResponse {
+	if t == nil {
+		return nil
+	}
+	return &types.GetShardOwnerResponse{
+		Owner:     t.GetOwner(),
+		Namespace: t.GetNamespace(),
+		Metadata:  t.GetMetadata(),
+	}
+}
+
 func FromShardDistributorExecutorHeartbeatRequest(t *types.ExecutorHeartbeatRequest) *sharddistributorv1.HeartbeatRequest {
 	if t == nil {
 		return nil
