@@ -7,6 +7,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	cliv3 "github.com/urfave/cli/v3"
 	"go.uber.org/mock/gomock"
@@ -25,12 +26,12 @@ func TestShardCommand_help_listsSubcommands(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	out := buf.String()
-	if !strings.Contains(out, "get-owner") {
-		t.Errorf("shard help should list 'get-owner' subcommand:\n%s", out)
+	if !strings.Contains(out, "inspect") {
+		t.Errorf("shard help should list 'inspect' subcommand:\n%s", out)
 	}
 }
 
-func TestGetShardOwner(t *testing.T) {
+func TestInspectShard(t *testing.T) {
 	type setupResult struct {
 		client     sharddistributor.Client
 		clientErr  error
@@ -45,18 +46,18 @@ func TestGetShardOwner(t *testing.T) {
 		check   func(t *testing.T, stdout string)
 	}{
 		{
-			name: "success: root flags propagate to shard get-owner",
+			name: "success: root flags propagate to shard inspect",
 			args: []string{
 				"smctl",
 				"--" + FlagAddress, "host.example.com:7943",
 				"--" + FlagNamespace, "ns-1",
-				"shard", "get-owner",
+				"shard", "inspect",
 				"--" + FlagShardKey, "shard-1",
 			},
 			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
 				mc := sharddistributor.NewMockClient(ctrl)
 				mc.EXPECT().
-					GetShardOwner(gomock.Any(), &types.GetShardOwnerRequest{
+					InspectShard(gomock.Any(), &types.GetShardOwnerRequest{
 						Namespace: "ns-1",
 						ShardKey:  "shard-1",
 					}).
@@ -98,23 +99,23 @@ func TestGetShardOwner(t *testing.T) {
 		},
 		{
 			name:    "missing --namespace fails with required-flag error",
-			args:    []string{"smctl", "shard", "get-owner", "--" + FlagShardKey, "shard-1"},
+			args:    []string{"smctl", "shard", "inspect", "--" + FlagShardKey, "shard-1"},
 			setup:   func(t *testing.T, ctrl *gomock.Controller) setupResult { return setupResult{} },
 			wantErr: `--` + FlagNamespace + ` is required`,
 		},
 		{
 			name:    "missing --shard-key fails with required-flag error",
-			args:    []string{"smctl", "-n", "ns-1", "shard", "get-owner"},
+			args:    []string{"smctl", "-n", "ns-1", "shard", "inspect"},
 			setup:   func(t *testing.T, ctrl *gomock.Controller) setupResult { return setupResult{} },
 			wantErr: `--` + FlagShardKey + ` is required`,
 		},
 		{
 			name: "API error surfaces NamespaceNotFound",
-			args: []string{"smctl", "-n", "missing", "shard", "get-owner", "--" + FlagShardKey, "sk-1"},
+			args: []string{"smctl", "-n", "missing", "shard", "inspect", "--" + FlagShardKey, "sk-1"},
 			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
 				mc := sharddistributor.NewMockClient(ctrl)
 				mc.EXPECT().
-					GetShardOwner(gomock.Any(), &types.GetShardOwnerRequest{
+					InspectShard(gomock.Any(), &types.GetShardOwnerRequest{
 						Namespace: "missing",
 						ShardKey:  "sk-1",
 					}).
@@ -125,11 +126,11 @@ func TestGetShardOwner(t *testing.T) {
 		},
 		{
 			name: "API error surfaces ShardNotFound",
-			args: []string{"smctl", "-n", "ns-1", "shard", "get-owner", "--" + FlagShardKey, "missing"},
+			args: []string{"smctl", "-n", "ns-1", "shard", "inspect", "--" + FlagShardKey, "missing"},
 			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
 				mc := sharddistributor.NewMockClient(ctrl)
 				mc.EXPECT().
-					GetShardOwner(gomock.Any(), &types.GetShardOwnerRequest{
+					InspectShard(gomock.Any(), &types.GetShardOwnerRequest{
 						Namespace: "ns-1",
 						ShardKey:  "missing",
 					}).
@@ -140,19 +141,49 @@ func TestGetShardOwner(t *testing.T) {
 		},
 		{
 			name: "factory error is propagated",
-			args: []string{"smctl", "-n", "ns-1", "shard", "get-owner", "--" + FlagShardKey, "sk-1"},
+			args: []string{"smctl", "-n", "ns-1", "shard", "inspect", "--" + FlagShardKey, "sk-1"},
 			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
 				return setupResult{clientErr: errors.New("boom")}
 			},
 			wantErr: "boom",
 		},
 		{
-			name: "shard alias 'sh', get-owner alias 'o', and shard-key alias 'sk' work",
-			args: []string{"smctl", "-n", "ns-1", "sh", "o", "-sk", "sk-1"},
+			name: "context-timeout flag is honored",
+			args: []string{
+				"smctl",
+				"--" + FlagContextTimeout, "1ms",
+				"-n", "ns-1",
+				"shard", "inspect",
+				"--" + FlagShardKey, "sk-1",
+			},
 			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
 				mc := sharddistributor.NewMockClient(ctrl)
 				mc.EXPECT().
-					GetShardOwner(gomock.Any(), &types.GetShardOwnerRequest{
+					InspectShard(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ *types.GetShardOwnerRequest, _ ...any) (*types.GetShardOwnerResponse, error) {
+						deadline, ok := ctx.Deadline()
+						if !ok {
+							t.Errorf("ctx should have deadline from --%s", FlagContextTimeout)
+							return &types.GetShardOwnerResponse{}, nil
+						}
+						if remaining := time.Until(deadline); remaining > 50*time.Millisecond {
+							t.Errorf("--%s=1ms should produce a sub-50ms deadline, got %v", FlagContextTimeout, remaining)
+						}
+						return &types.GetShardOwnerResponse{
+							Owner:     "executor-a",
+							Namespace: "ns-1",
+						}, nil
+					})
+				return setupResult{client: mc}
+			},
+		},
+		{
+			name: "shard alias 'sh', inspect alias 'in', and shard-key alias 'sk' work",
+			args: []string{"smctl", "-n", "ns-1", "sh", "in", "-sk", "sk-1"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				mc := sharddistributor.NewMockClient(ctrl)
+				mc.EXPECT().
+					InspectShard(gomock.Any(), &types.GetShardOwnerRequest{
 						Namespace: "ns-1",
 						ShardKey:  "sk-1",
 					}).

@@ -16,21 +16,20 @@ func shardCommand(cf ClientFactory) *cliv3.Command {
 		Name:        "shard",
 		Aliases:     []string{"sh"},
 		Usage:       "Inspect and manage shard-manager shards",
-		Description: "Use --shard/-sh on the root command to identify the target shard.",
+		Description: "Use --namespace/-n on the root command to identify the target namespace.",
 		Commands: []*cliv3.Command{
-			shardOwnerCommand(cf),
+			shardInspectCommand(cf),
 		},
 	}
 }
 
-// shardOwnerCommand prints the owner of the given shard by calling
-// shard-manager's GetShardOwner API.
-func shardOwnerCommand(cf ClientFactory) *cliv3.Command {
+// shardInspectCommand prints shard owner metadata by calling InspectShard API
+func shardInspectCommand(cf ClientFactory) *cliv3.Command {
 	return &cliv3.Command{
-		Name:        "get-owner",
-		Aliases:     []string{"o"},
-		Usage:       "Get the executor that currently owns a given shard",
-		Description: "Calls GetShardOwner on shard-manager and prints the response.",
+		Name:        "inspect",
+		Aliases:     []string{"in"},
+		Usage:       "Inspect the current owner of a shard from storage",
+		Description: "Calls InspectShard on shard-manager and prints the response as JSON.",
 		Flags: []cliv3.Flag{
 			&cliv3.StringFlag{
 				Name:    FlagShardKey,
@@ -39,12 +38,12 @@ func shardOwnerCommand(cf ClientFactory) *cliv3.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cliv3.Command) error {
-			return runGetShardOwner(ctx, cmd, resolveWriter(cmd), cf)
+			return runInspectShard(ctx, cmd, resolveWriter(cmd), cf)
 		},
 	}
 }
 
-func runGetShardOwner(
+func runInspectShard(
 	ctx context.Context,
 	cmd *cliv3.Command,
 	out io.Writer,
@@ -68,12 +67,12 @@ func runGetShardOwner(
 	callCtx, cancel := context.WithTimeout(ctx, cmd.Duration(FlagContextTimeout))
 	defer cancel()
 
-	resp, err := client.GetShardOwner(callCtx, &types.GetShardOwnerRequest{
+	resp, err := client.InspectShard(callCtx, &types.GetShardOwnerRequest{
 		Namespace: namespace,
 		ShardKey:  shardKey,
 	})
 	if err != nil {
-		return fmt.Errorf("GetShardOwner: %w", err)
+		return fmt.Errorf("InspectShard: %w", err)
 	}
 
 	enc := json.NewEncoder(out)
