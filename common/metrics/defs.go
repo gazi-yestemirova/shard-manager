@@ -902,6 +902,9 @@ const (
 	// ShardDistributorClientWatchNamespaceStateScope tracks WatchNamespaceState calls made by service to shard distributor
 	ShardDistributorClientWatchNamespaceStateScope
 
+	// ShardDistributorClientInspectShardScope tracks InspectShard calls made by service to shard distributor
+	ShardDistributorClientInspectShardScope
+
 	// ShardDistributorClientDrainShardsScope tracks DrainShards calls made by service to shard distributor
 	ShardDistributorClientDrainShardsScope
 
@@ -1516,6 +1519,9 @@ const (
 	// ShardDistributorLeaderScope tracks leader election state
 	ShardDistributorLeaderScope
 
+	// ShardDistributorInspectShardScope tracks InspectShard API calls received by service
+	ShardDistributorInspectShardScope
+
 	NumShardDistributorScopes
 )
 
@@ -1903,6 +1909,7 @@ var ScopeDefs = map[ServiceIdx]map[ScopeIdx]scopeDefinition{
 		ShardDistributorClientGetShardOwnerScope:       {operation: "ShardDistributorClientGetShardOwner"},
 		ShardDistributorClientGetNamespaceStateScope:   {operation: "ShardDistributorClientGetNamespaceState"},
 		ShardDistributorClientWatchNamespaceStateScope: {operation: "ShardDistributorClientWatchNamespaceState"},
+		ShardDistributorClientInspectShardScope:        {operation: "ShardDistributorClientInspectShard"},
 		ShardDistributorClientDrainShardsScope:         {operation: "ShardDistributorClientDrainShards"},
 		ShardDistributorClientUndrainShardsScope:       {operation: "ShardDistributorClientUndrainShards"},
 		ShardDistributorClientGetDrainedShardsScope:    {operation: "ShardDistributorClientGetDrainedShards"},
@@ -2214,6 +2221,7 @@ var ScopeDefs = map[ServiceIdx]map[ScopeIdx]scopeDefinition{
 		ShardDistributorStoreDeleteAssignedStatesScope:             {operation: "StoreDeleteAssignedStates"},
 		ShardDistributorWatchScope:                                 {operation: "Watch"},
 		ShardDistributorLeaderScope:                                {operation: "Leader"},
+		ShardDistributorInspectShardScope:                          {operation: "InspectShard"},
 	},
 }
 

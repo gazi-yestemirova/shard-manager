@@ -41,6 +41,11 @@ func (g GRPCHandler) GetShardOwner(ctx context.Context, request *sharddistributo
 	return proto.FromShardDistributorGetShardOwnerResponse(response), proto.FromError(err)
 }
 
+func (g GRPCHandler) InspectShard(ctx context.Context, request *sharddistributorv1.InspectShardRequest) (*sharddistributorv1.InspectShardResponse, error) {
+	response, err := g.h.InspectShard(ctx, proto.ToShardDistributorInspectShardRequest(request))
+	return proto.FromShardDistributorInspectShardResponse(response), proto.FromError(err)
+}
+
 func (g GRPCHandler) UndrainShards(ctx context.Context, request *sharddistributorv1.UndrainShardsRequest) (*sharddistributorv1.UndrainShardsResponse, error) {
 	response, err := g.h.UndrainShards(ctx, proto.ToShardDistributorUndrainShardsRequest(request))
 	return proto.FromShardDistributorUndrainShardsResponse(response), proto.FromError(err)

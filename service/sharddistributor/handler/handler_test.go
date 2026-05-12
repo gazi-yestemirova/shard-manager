@@ -282,6 +282,117 @@ func TestGetShardOwner(t *testing.T) {
 	}
 }
 
+func TestInspectShard(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{
+				Name:     _testNamespaceFixed,
+				Type:     config.NamespaceTypeFixed,
+				ShardNum: 32,
+			},
+			{
+				Name: _testNamespaceEphemeral,
+				Type: config.NamespaceTypeEphemeral,
+			},
+		},
+	}
+
+	tests := []struct {
+		name           string
+		request        *types.GetShardOwnerRequest
+		setupMocks     func(mockStore *store.MockStore)
+		expectedOwner  string
+		expectedError  bool
+		expectedErrMsg string
+	}{
+		{
+			name: "InvalidNamespace",
+			request: &types.GetShardOwnerRequest{
+				Namespace: "namespace not found invalidNamespace",
+				ShardKey:  "1",
+			},
+			expectedError:  true,
+			expectedErrMsg: "namespace not found",
+		},
+		{
+			name: "LookupError",
+			request: &types.GetShardOwnerRequest{
+				Namespace: _testNamespaceFixed,
+				ShardKey:  "1",
+			},
+			setupMocks: func(mockStore *store.MockStore) {
+				mockStore.EXPECT().GetShardOwner(gomock.Any(), _testNamespaceFixed, "1").Return(nil, errors.New("lookup error"))
+			},
+			expectedError:  true,
+			expectedErrMsg: "lookup error",
+		},
+		{
+			name: "Existing_Success_Fixed",
+			request: &types.GetShardOwnerRequest{
+				Namespace: _testNamespaceFixed,
+				ShardKey:  "123",
+			},
+			setupMocks: func(mockStore *store.MockStore) {
+				mockStore.EXPECT().GetShardOwner(gomock.Any(), _testNamespaceFixed, "123").Return(&store.ShardOwner{
+					ExecutorID: "owner1",
+					Metadata:   map[string]string{"ip": "127.0.0.1", "port": "1234"},
+				}, nil)
+			},
+			expectedOwner: "owner1",
+			expectedError: false,
+		},
+		{
+			name: "ShardNotFound_Fixed",
+			request: &types.GetShardOwnerRequest{
+				Namespace: _testNamespaceFixed,
+				ShardKey:  "NON-EXISTING-SHARD",
+			},
+			setupMocks: func(mockStore *store.MockStore) {
+				mockStore.EXPECT().GetShardOwner(gomock.Any(), _testNamespaceFixed, "NON-EXISTING-SHARD").Return(nil, store.ErrShardNotFound)
+			},
+			expectedError:  true,
+			expectedErrMsg: "shard not found",
+		},
+		{
+			name: "ShardNotFound_Ephemeral_DoesNotAssign",
+			request: &types.GetShardOwnerRequest{
+				Namespace: _testNamespaceEphemeral,
+				ShardKey:  "NON-EXISTING-SHARD",
+			},
+			setupMocks: func(mockStore *store.MockStore) {
+				mockStore.EXPECT().GetShardOwner(gomock.Any(), _testNamespaceEphemeral, "NON-EXISTING-SHARD").Return(nil, store.ErrShardNotFound)
+			},
+			expectedError:  true,
+			expectedErrMsg: "shard not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockStorage := store.NewMockStore(ctrl)
+
+			handler := newTestHandler(t, cfg, mockStorage)
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockStorage)
+			}
+			resp, err := handler.InspectShard(context.Background(), tt.request)
+			if tt.expectedError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.expectedErrMsg)
+				require.Nil(t, resp)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedOwner, resp.Owner)
+				require.Equal(t, tt.request.Namespace, resp.Namespace)
+				expectedMetadata := map[string]string{"ip": "127.0.0.1", "port": "1234"}
+				require.Equal(t, expectedMetadata, resp.Metadata)
+			}
+		})
+	}
+}
+
 func TestWatchNamespaceState(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	logger := testlogger.New(t)

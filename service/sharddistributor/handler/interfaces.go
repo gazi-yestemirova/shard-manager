@@ -43,6 +43,8 @@ type Handler interface {
 
 	GetShardOwner(context.Context, *types.GetShardOwnerRequest) (*types.GetShardOwnerResponse, error)
 
+	InspectShard(context.Context, *types.GetShardOwnerRequest) (*types.GetShardOwnerResponse, error)
+
 	GetNamespaceState(context.Context, *types.GetNamespaceStateRequest) (*types.GetNamespaceStateResponse, error)
 
 	WatchNamespaceState(*types.WatchNamespaceStateRequest, WatchNamespaceStateServer) error

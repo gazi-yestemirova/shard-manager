@@ -45,6 +45,18 @@ func TestFromShardDistributorGetShardOwnerResponse(t *testing.T) {
 	}
 }
 
+func TestFromShardDistributorInspectShardRequest(t *testing.T) {
+	for _, item := range []*types.GetShardOwnerRequest{nil, {}, &testdata.ShardDistributorGetShardOwnerRequest} {
+		assert.Equal(t, item, ToShardDistributorInspectShardRequest(FromShardDistributorInspectShardRequest(item)))
+	}
+}
+
+func TestFromShardDistributorInspectShardResponse(t *testing.T) {
+	for _, item := range []*types.GetShardOwnerResponse{nil, {}, &testdata.ShardDistributorGetShardOwnerResponse} {
+		assert.Equal(t, item, ToShardDistributorInspectShardResponse(FromShardDistributorInspectShardResponse(item)))
+	}
+}
+
 func TestFromShardDistributorExecutorHeartbeatRequest(t *testing.T) {
 	for _, item := range []*types.ExecutorHeartbeatRequest{nil, {}, &testdata.ShardDistributorExecutorHeartbeatRequest} {
 		assert.Equal(t, item, ToShardDistributorExecutorHeartbeatRequest(FromShardDistributorExecutorHeartbeatRequest(item)))
@@ -176,6 +188,14 @@ func TestGetShardOwnerRequestFuzz(t *testing.T) {
 
 func TestGetShardOwnerResponseFuzz(t *testing.T) {
 	testutils.RunMapperFuzzTest(t, FromShardDistributorGetShardOwnerResponse, ToShardDistributorGetShardOwnerResponse)
+}
+
+func TestInspectShardRequestFuzz(t *testing.T) {
+	testutils.RunMapperFuzzTest(t, FromShardDistributorInspectShardRequest, ToShardDistributorInspectShardRequest)
+}
+
+func TestInspectShardResponseFuzz(t *testing.T) {
+	testutils.RunMapperFuzzTest(t, FromShardDistributorInspectShardResponse, ToShardDistributorInspectShardResponse)
 }
 
 func TestWatchNamespaceStateRequestFuzz(t *testing.T) {
