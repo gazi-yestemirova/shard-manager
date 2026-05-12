@@ -46,6 +46,8 @@ func FromError(err error) error {
 		return typedErr
 	} else if ok, typedErr = errorutils.ConvertError(err, fromShardNotFoundErr); ok {
 		return typedErr
+	} else if ok, typedErr = errorutils.ConvertError(err, fromShardDrainedErr); ok {
+		return typedErr
 	}
 
 	return protobuf.NewError(yarpcerrors.CodeUnknown, err.Error())
@@ -76,6 +78,13 @@ func ToError(err error) error {
 					Namespace: details.Namespace,
 					ShardKey:  details.ShardKey,
 				}
+			}
+		}
+	case yarpcerrors.CodeFailedPrecondition:
+		if details, ok := getErrorDetails(err).(*sharddistributorv1.ShardDrainedError); ok && details != nil {
+			return &types.ShardDrainedError{
+				Namespace: details.Namespace,
+				ShardKey:  details.ShardKey,
 			}
 		}
 	case yarpcerrors.CodeInvalidArgument:
@@ -112,6 +121,13 @@ func fromNamespaceNotFoundErr(e *types.NamespaceNotFoundError) error {
 
 func fromShardNotFoundErr(e *types.ShardNotFoundError) error {
 	return protobuf.NewError(yarpcerrors.CodeNotFound, e.Error(), protobuf.WithErrorDetails(&sharddistributorv1.ShardNotFoundError{
+		Namespace: e.Namespace,
+		ShardKey:  e.ShardKey,
+	}))
+}
+
+func fromShardDrainedErr(e *types.ShardDrainedError) error {
+	return protobuf.NewError(yarpcerrors.CodeFailedPrecondition, e.Error(), protobuf.WithErrorDetails(&sharddistributorv1.ShardDrainedError{
 		Namespace: e.Namespace,
 		ShardKey:  e.ShardKey,
 	}))

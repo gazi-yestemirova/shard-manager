@@ -467,3 +467,57 @@ func TestGetNamespaceState_heartbeatWithoutAssignments(t *testing.T) {
 	require.Equal(t, now, ex.LastHeartbeat)
 	require.Empty(t, ex.AssignedShards)
 }
+
+// The drain/undrain RPCs are wired up as stubs in this change; the logic
+// (storage, rebalance integration, GetShardOwner short-circuit) lands in a
+// follow-up. These tests are smoke tests that the stubs are reachable and
+// return a clear "not implemented" error without touching storage.
+func TestDrainShardsStub(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32}},
+	}
+	ctrl := gomock.NewController(t)
+	mockStorage := store.NewMockStore(ctrl)
+
+	h := newTestHandler(t, cfg, mockStorage)
+	resp, err := h.DrainShards(context.Background(), &types.DrainShardsRequest{
+		Namespace: _testNamespaceFixed,
+		ShardKeys: []string{"1"},
+	})
+	require.Nil(t, resp)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not yet implemented")
+}
+
+func TestUndrainShardsStub(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32}},
+	}
+	ctrl := gomock.NewController(t)
+	mockStorage := store.NewMockStore(ctrl)
+
+	h := newTestHandler(t, cfg, mockStorage)
+	resp, err := h.UndrainShards(context.Background(), &types.UndrainShardsRequest{
+		Namespace: _testNamespaceFixed,
+		ShardKeys: []string{"1"},
+	})
+	require.Nil(t, resp)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not yet implemented")
+}
+
+func TestGetDrainedShardsStub(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32}},
+	}
+	ctrl := gomock.NewController(t)
+	mockStorage := store.NewMockStore(ctrl)
+
+	h := newTestHandler(t, cfg, mockStorage)
+	resp, err := h.GetDrainedShards(context.Background(), &types.GetDrainedShardsRequest{
+		Namespace: _testNamespaceFixed,
+	})
+	require.Nil(t, resp)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not yet implemented")
+}

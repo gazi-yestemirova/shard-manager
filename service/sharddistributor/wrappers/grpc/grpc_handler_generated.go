@@ -21,6 +21,16 @@ func NewGRPCHandler(h handler.Handler) GRPCHandler {
 	return GRPCHandler{h}
 }
 
+func (g GRPCHandler) DrainShards(ctx context.Context, request *sharddistributorv1.DrainShardsRequest) (*sharddistributorv1.DrainShardsResponse, error) {
+	response, err := g.h.DrainShards(ctx, proto.ToShardDistributorDrainShardsRequest(request))
+	return proto.FromShardDistributorDrainShardsResponse(response), proto.FromError(err)
+}
+
+func (g GRPCHandler) GetDrainedShards(ctx context.Context, request *sharddistributorv1.GetDrainedShardsRequest) (*sharddistributorv1.GetDrainedShardsResponse, error) {
+	response, err := g.h.GetDrainedShards(ctx, proto.ToShardDistributorGetDrainedShardsRequest(request))
+	return proto.FromShardDistributorGetDrainedShardsResponse(response), proto.FromError(err)
+}
+
 func (g GRPCHandler) GetNamespaceState(ctx context.Context, request *sharddistributorv1.GetNamespaceStateRequest) (*sharddistributorv1.GetNamespaceStateResponse, error) {
 	response, err := g.h.GetNamespaceState(ctx, proto.ToShardDistributorGetNamespaceStateRequest(request))
 	return proto.FromShardDistributorGetNamespaceStateResponse(response), proto.FromError(err)
@@ -29,6 +39,11 @@ func (g GRPCHandler) GetNamespaceState(ctx context.Context, request *sharddistri
 func (g GRPCHandler) GetShardOwner(ctx context.Context, request *sharddistributorv1.GetShardOwnerRequest) (*sharddistributorv1.GetShardOwnerResponse, error) {
 	response, err := g.h.GetShardOwner(ctx, proto.ToShardDistributorGetShardOwnerRequest(request))
 	return proto.FromShardDistributorGetShardOwnerResponse(response), proto.FromError(err)
+}
+
+func (g GRPCHandler) UndrainShards(ctx context.Context, request *sharddistributorv1.UndrainShardsRequest) (*sharddistributorv1.UndrainShardsResponse, error) {
+	response, err := g.h.UndrainShards(ctx, proto.ToShardDistributorUndrainShardsRequest(request))
+	return proto.FromShardDistributorUndrainShardsResponse(response), proto.FromError(err)
 }
 
 func (g GRPCHandler) WatchNamespaceState(request *sharddistributorv1.WatchNamespaceStateRequest, server sharddistributorv1.ShardDistributorAPIServiceWatchNamespaceStateYARPCServer) error {

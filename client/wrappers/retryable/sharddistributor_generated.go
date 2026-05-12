@@ -31,6 +31,28 @@ func NewShardDistributorClient(client sharddistributor.Client, policy backoff.Re
 	}
 }
 
+func (c *sharddistributorClient) DrainShards(ctx context.Context, dp1 *types.DrainShardsRequest, p1 ...yarpc.CallOption) (dp2 *types.DrainShardsResponse, err error) {
+	var resp *types.DrainShardsResponse
+	op := func(ctx context.Context) error {
+		var err error
+		resp, err = c.client.DrainShards(ctx, dp1, p1...)
+		return err
+	}
+	err = c.throttleRetry.Do(ctx, op)
+	return resp, err
+}
+
+func (c *sharddistributorClient) GetDrainedShards(ctx context.Context, gp1 *types.GetDrainedShardsRequest, p1 ...yarpc.CallOption) (gp2 *types.GetDrainedShardsResponse, err error) {
+	var resp *types.GetDrainedShardsResponse
+	op := func(ctx context.Context) error {
+		var err error
+		resp, err = c.client.GetDrainedShards(ctx, gp1, p1...)
+		return err
+	}
+	err = c.throttleRetry.Do(ctx, op)
+	return resp, err
+}
+
 func (c *sharddistributorClient) GetNamespaceState(ctx context.Context, gp1 *types.GetNamespaceStateRequest, p1 ...yarpc.CallOption) (gp2 *types.GetNamespaceStateResponse, err error) {
 	var resp *types.GetNamespaceStateResponse
 	op := func(ctx context.Context) error {
@@ -47,6 +69,17 @@ func (c *sharddistributorClient) GetShardOwner(ctx context.Context, gp1 *types.G
 	op := func(ctx context.Context) error {
 		var err error
 		resp, err = c.client.GetShardOwner(ctx, gp1, p1...)
+		return err
+	}
+	err = c.throttleRetry.Do(ctx, op)
+	return resp, err
+}
+
+func (c *sharddistributorClient) UndrainShards(ctx context.Context, up1 *types.UndrainShardsRequest, p1 ...yarpc.CallOption) (up2 *types.UndrainShardsResponse, err error) {
+	var resp *types.UndrainShardsResponse
+	op := func(ctx context.Context) error {
+		var err error
+		resp, err = c.client.UndrainShards(ctx, up1, p1...)
 		return err
 	}
 	err = c.throttleRetry.Do(ctx, op)
