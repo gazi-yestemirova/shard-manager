@@ -468,10 +468,6 @@ func TestGetNamespaceState_heartbeatWithoutAssignments(t *testing.T) {
 	require.Empty(t, ex.AssignedShards)
 }
 
-// The drain/undrain RPCs are wired up as stubs in this change; the logic
-// (storage, rebalance integration, GetShardOwner short-circuit) lands in a
-// follow-up. These tests are smoke tests that the stubs are reachable and
-// return a clear "not implemented" error without touching storage.
 func TestDrainShardsStub(t *testing.T) {
 	cfg := config.ShardDistribution{
 		Namespaces: []config.Namespace{{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32}},
