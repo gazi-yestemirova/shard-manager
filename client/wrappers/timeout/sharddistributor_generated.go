@@ -45,6 +45,12 @@ func (c *sharddistributorClient) GetShardOwner(ctx context.Context, gp1 *types.G
 	return c.client.GetShardOwner(ctx, gp1, p1...)
 }
 
+func (c *sharddistributorClient) InspectShard(ctx context.Context, gp1 *types.GetShardOwnerRequest, p1 ...yarpc.CallOption) (gp2 *types.GetShardOwnerResponse, err error) {
+	ctx, cancel := createContext(ctx, c.timeout)
+	defer cancel()
+	return c.client.InspectShard(ctx, gp1, p1...)
+}
+
 func (c *sharddistributorClient) ListNamespaces(ctx context.Context, lp1 *types.ListNamespacesRequest, p1 ...yarpc.CallOption) (lp2 *types.ListNamespacesResponse, err error) {
 	ctx, cancel := createContext(ctx, c.timeout)
 	defer cancel()
