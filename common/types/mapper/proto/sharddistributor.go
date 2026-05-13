@@ -613,3 +613,169 @@ func toShardDistributorNamespaceConfig(t *sharddistributorv1.NamespaceConfig) *t
 		ShardNum: t.GetShardNum(),
 	}
 }
+
+// FromShardDistributorDrainShardsRequest converts a types.DrainShardsRequest to its proto counterpart.
+func FromShardDistributorDrainShardsRequest(t *types.DrainShardsRequest) *sharddistributorv1.DrainShardsRequest {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.DrainShardsRequest{
+		Namespace: t.GetNamespace(),
+		ShardKeys: t.GetShardKeys(),
+	}
+}
+
+// ToShardDistributorDrainShardsRequest converts a proto DrainShardsRequest to its types counterpart.
+func ToShardDistributorDrainShardsRequest(t *sharddistributorv1.DrainShardsRequest) *types.DrainShardsRequest {
+	if t == nil {
+		return nil
+	}
+	return &types.DrainShardsRequest{
+		Namespace: t.GetNamespace(),
+		ShardKeys: t.GetShardKeys(),
+	}
+}
+
+// FromShardDistributorDrainShardsResponse converts a types.DrainShardsResponse to its proto counterpart.
+func FromShardDistributorDrainShardsResponse(t *types.DrainShardsResponse) *sharddistributorv1.DrainShardsResponse {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.DrainShardsResponse{
+		DrainedShardKeys: t.GetDrainedShardKeys(),
+	}
+}
+
+// ToShardDistributorDrainShardsResponse converts a proto DrainShardsResponse to its types counterpart.
+func ToShardDistributorDrainShardsResponse(t *sharddistributorv1.DrainShardsResponse) *types.DrainShardsResponse {
+	if t == nil {
+		return nil
+	}
+	return &types.DrainShardsResponse{
+		DrainedShardKeys: t.GetDrainedShardKeys(),
+	}
+}
+
+// FromShardDistributorUndrainShardsRequest converts a types.UndrainShardsRequest to its proto counterpart.
+func FromShardDistributorUndrainShardsRequest(t *types.UndrainShardsRequest) *sharddistributorv1.UndrainShardsRequest {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.UndrainShardsRequest{
+		Namespace: t.GetNamespace(),
+		ShardKeys: t.GetShardKeys(),
+	}
+}
+
+// ToShardDistributorUndrainShardsRequest converts a proto UndrainShardsRequest to its types counterpart.
+func ToShardDistributorUndrainShardsRequest(t *sharddistributorv1.UndrainShardsRequest) *types.UndrainShardsRequest {
+	if t == nil {
+		return nil
+	}
+	return &types.UndrainShardsRequest{
+		Namespace: t.GetNamespace(),
+		ShardKeys: t.GetShardKeys(),
+	}
+}
+
+// FromShardDistributorUndrainShardsResponse converts a types.UndrainShardsResponse to its proto counterpart.
+func FromShardDistributorUndrainShardsResponse(t *types.UndrainShardsResponse) *sharddistributorv1.UndrainShardsResponse {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.UndrainShardsResponse{
+		UndrainedShardKeys: t.GetUndrainedShardKeys(),
+	}
+}
+
+// ToShardDistributorUndrainShardsResponse converts a proto UndrainShardsResponse to its types counterpart.
+func ToShardDistributorUndrainShardsResponse(t *sharddistributorv1.UndrainShardsResponse) *types.UndrainShardsResponse {
+	if t == nil {
+		return nil
+	}
+	return &types.UndrainShardsResponse{
+		UndrainedShardKeys: t.GetUndrainedShardKeys(),
+	}
+}
+
+// FromShardDistributorGetDrainedShardsRequest converts a types.GetDrainedShardsRequest to its proto counterpart.
+func FromShardDistributorGetDrainedShardsRequest(t *types.GetDrainedShardsRequest) *sharddistributorv1.GetDrainedShardsRequest {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.GetDrainedShardsRequest{
+		Namespace: t.GetNamespace(),
+	}
+}
+
+// ToShardDistributorGetDrainedShardsRequest converts a proto GetDrainedShardsRequest to its types counterpart.
+func ToShardDistributorGetDrainedShardsRequest(t *sharddistributorv1.GetDrainedShardsRequest) *types.GetDrainedShardsRequest {
+	if t == nil {
+		return nil
+	}
+	return &types.GetDrainedShardsRequest{
+		Namespace: t.GetNamespace(),
+	}
+}
+
+// FromShardDistributorGetDrainedShardsResponse converts a types.GetDrainedShardsResponse to its proto counterpart.
+func FromShardDistributorGetDrainedShardsResponse(t *types.GetDrainedShardsResponse) *sharddistributorv1.GetDrainedShardsResponse {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.GetDrainedShardsResponse{
+		Namespace: t.GetNamespace(),
+		ShardKeys: t.GetShardKeys(),
+	}
+}
+
+// ToShardDistributorGetDrainedShardsResponse converts a proto GetDrainedShardsResponse to its types counterpart.
+func ToShardDistributorGetDrainedShardsResponse(t *sharddistributorv1.GetDrainedShardsResponse) *types.GetDrainedShardsResponse {
+	if t == nil {
+		return nil
+	}
+	return &types.GetDrainedShardsResponse{
+		Namespace: t.GetNamespace(),
+		ShardKeys: t.GetShardKeys(),
+	}
+}
+
+// FromShardDistributorForceResetNamespaceRequest converts a types.ForceResetNamespaceRequest to a sharddistributor ForceResetNamespaceRequest.
+func FromShardDistributorForceResetNamespaceRequest(t *types.ForceResetNamespaceRequest) *sharddistributorv1.ForceResetNamespaceRequest {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.ForceResetNamespaceRequest{
+		Namespace: t.GetNamespace(),
+	}
+}
+
+// ToShardDistributorForceResetNamespaceRequest converts a sharddistributor ForceResetNamespaceRequest to a types.ForceResetNamespaceRequest.
+func ToShardDistributorForceResetNamespaceRequest(t *sharddistributorv1.ForceResetNamespaceRequest) *types.ForceResetNamespaceRequest {
+	if t == nil {
+		return nil
+	}
+	return &types.ForceResetNamespaceRequest{
+		Namespace: t.GetNamespace(),
+	}
+}
+
+// FromShardDistributorForceResetNamespaceResponse converts a types.ForceResetNamespaceResponse to a sharddistributor ForceResetNamespaceResponse.
+func FromShardDistributorForceResetNamespaceResponse(t *types.ForceResetNamespaceResponse) *sharddistributorv1.ForceResetNamespaceResponse {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.ForceResetNamespaceResponse{
+		DeletedKeys: t.GetDeletedKeys(),
+	}
+}
+
+// ToShardDistributorForceResetNamespaceResponse converts a sharddistributor ForceResetNamespaceResponse to a types.ForceResetNamespaceResponse.
+func ToShardDistributorForceResetNamespaceResponse(t *sharddistributorv1.ForceResetNamespaceResponse) *types.ForceResetNamespaceResponse {
+	if t == nil {
+		return nil
+	}
+	return &types.ForceResetNamespaceResponse{
+		DeletedKeys: t.GetDeletedKeys(),
+	}
+}

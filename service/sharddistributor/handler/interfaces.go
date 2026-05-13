@@ -50,6 +50,12 @@ type Handler interface {
 	WatchNamespaceState(*types.WatchNamespaceStateRequest, WatchNamespaceStateServer) error
 
 	ListNamespaces(context.Context, *types.ListNamespacesRequest) (*types.ListNamespacesResponse, error)
+
+	DrainShards(context.Context, *types.DrainShardsRequest) (*types.DrainShardsResponse, error)
+	UndrainShards(context.Context, *types.UndrainShardsRequest) (*types.UndrainShardsResponse, error)
+	GetDrainedShards(context.Context, *types.GetDrainedShardsRequest) (*types.GetDrainedShardsResponse, error)
+
+	ForceResetNamespace(context.Context, *types.ForceResetNamespaceRequest) (*types.ForceResetNamespaceResponse, error)
 }
 
 type Executor interface {

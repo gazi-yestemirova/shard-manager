@@ -234,6 +234,29 @@ func (v *NamespaceConfig) GetShardNum() (o int64) {
 	return
 }
 
+type ForceResetNamespaceRequest struct {
+	Namespace string
+}
+
+func (v *ForceResetNamespaceRequest) GetNamespace() (o string) {
+	if v != nil {
+		return v.Namespace
+	}
+	return
+}
+
+type ForceResetNamespaceResponse struct {
+	// DeletedKeys is the number of etcd keys removed under the namespace prefix
+	DeletedKeys int64
+}
+
+func (v *ForceResetNamespaceResponse) GetDeletedKeys() (o int64) {
+	if v != nil {
+		return v.DeletedKeys
+	}
+	return
+}
+
 type NamespaceNotFoundError struct {
 	Namespace string
 }
@@ -253,6 +276,20 @@ type ShardNotFoundError struct {
 func (n *ShardNotFoundError) Error() (o string) {
 	if n != nil {
 		return fmt.Sprintf("shard not found %v:%v", n.Namespace, n.ShardKey)
+	}
+	return
+}
+
+// ShardDrainedError is returned when an operation is attempted on a shard
+// that is currently in the drained list for its namespace.
+type ShardDrainedError struct {
+	Namespace string
+	ShardKey  string
+}
+
+func (n *ShardDrainedError) Error() (o string) {
+	if n != nil {
+		return fmt.Sprintf("shard drained %v:%v", n.Namespace, n.ShardKey)
 	}
 	return
 }
@@ -476,6 +513,100 @@ type Shard struct {
 func (v *Shard) GetShardKey() (o string) {
 	if v != nil {
 		return v.ShardKey
+	}
+	return
+}
+
+type DrainShardsRequest struct {
+	Namespace string
+	ShardKeys []string
+}
+
+func (v *DrainShardsRequest) GetNamespace() (o string) {
+	if v != nil {
+		return v.Namespace
+	}
+	return
+}
+
+func (v *DrainShardsRequest) GetShardKeys() (o []string) {
+	if v != nil {
+		return v.ShardKeys
+	}
+	return
+}
+
+type DrainShardsResponse struct {
+	// DrainedShardKeys is the set of shard keys that are drained for the
+	// namespace after this call (includes shards that were already drained).
+	DrainedShardKeys []string
+}
+
+func (v *DrainShardsResponse) GetDrainedShardKeys() (o []string) {
+	if v != nil {
+		return v.DrainedShardKeys
+	}
+	return
+}
+
+type UndrainShardsRequest struct {
+	Namespace string
+	ShardKeys []string
+}
+
+func (v *UndrainShardsRequest) GetNamespace() (o string) {
+	if v != nil {
+		return v.Namespace
+	}
+	return
+}
+
+func (v *UndrainShardsRequest) GetShardKeys() (o []string) {
+	if v != nil {
+		return v.ShardKeys
+	}
+	return
+}
+
+type UndrainShardsResponse struct {
+	// UndrainedShardKeys is the subset of the request shard keys that were
+	// actually removed from the drained list by this call.
+	UndrainedShardKeys []string
+}
+
+func (v *UndrainShardsResponse) GetUndrainedShardKeys() (o []string) {
+	if v != nil {
+		return v.UndrainedShardKeys
+	}
+	return
+}
+
+type GetDrainedShardsRequest struct {
+	Namespace string
+}
+
+func (v *GetDrainedShardsRequest) GetNamespace() (o string) {
+	if v != nil {
+		return v.Namespace
+	}
+	return
+}
+
+type GetDrainedShardsResponse struct {
+	Namespace string
+	ShardKeys []string
+}
+
+func (v *GetDrainedShardsResponse) GetNamespace() (o string) {
+	if v != nil {
+		return v.Namespace
+	}
+	return
+}
+
+func (v *GetDrainedShardsResponse) GetShardKeys() (o []string) {
+	if v != nil {
+		return v.ShardKeys
 	}
 	return
 }

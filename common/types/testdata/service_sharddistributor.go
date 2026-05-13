@@ -117,4 +117,10 @@ var (
 			},
 		},
 	}
+	ShardDistributorForceResetNamespaceRequest = types.ForceResetNamespaceRequest{
+		Namespace: "namespace",
+	}
+	ShardDistributorForceResetNamespaceResponse = types.ForceResetNamespaceResponse{
+		DeletedKeys: 42,
+	}
 )

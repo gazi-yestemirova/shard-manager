@@ -139,6 +139,16 @@ func (c *meteredStore) RecordHeartbeat(ctx context.Context, namespace string, ex
 	return
 }
 
+func (c *meteredStore) ResetNamespace(ctx context.Context, namespace string) (i1 int64, err error) {
+	op := func() error {
+		i1, err = c.wrapped.ResetNamespace(ctx, namespace)
+		return err
+	}
+
+	err = c.call(metrics.ShardDistributorStoreResetNamespaceScope, op, metrics.NamespaceTag(namespace))
+	return
+}
+
 func (c *meteredStore) SubscribeToAssignmentChanges(ctx context.Context, namespace string) (ch1 <-chan map[*store.ShardOwner][]string, f1 func(), err error) {
 	op := func() error {
 		ch1, f1, err = c.wrapped.SubscribeToAssignmentChanges(ctx, namespace)
