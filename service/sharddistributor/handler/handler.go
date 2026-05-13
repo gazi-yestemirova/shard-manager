@@ -136,6 +136,37 @@ func (h *handlerImpl) GetShardOwner(ctx context.Context, request *types.GetShard
 	}, nil
 }
 
+// InspectShard returns the shard owner from storage
+func (h *handlerImpl) InspectShard(ctx context.Context, request *types.GetShardOwnerRequest) (resp *types.GetShardOwnerResponse, retError error) {
+	defer func() { log.CapturePanic(recover(), h.logger, &retError) }()
+
+	namespaceIdx := slices.IndexFunc(h.shardDistributionCfg.Namespaces, func(namespace config.Namespace) bool {
+		return namespace.Name == request.Namespace
+	})
+	if namespaceIdx == -1 {
+		return nil, &types.NamespaceNotFoundError{
+			Namespace: request.Namespace,
+		}
+	}
+
+	shardOwner, err := h.storage.GetShardOwner(ctx, request.Namespace, request.ShardKey)
+	if errors.Is(err, store.ErrShardNotFound) {
+		return nil, &types.ShardNotFoundError{
+			Namespace: request.Namespace,
+			ShardKey:  request.ShardKey,
+		}
+	}
+	if err != nil {
+		return nil, &types.InternalServiceError{Message: fmt.Sprintf("failed to inspect shard owner: %v", err)}
+	}
+
+	return &types.GetShardOwnerResponse{
+		Owner:     shardOwner.ExecutorID,
+		Metadata:  shardOwner.Metadata,
+		Namespace: request.Namespace,
+	}, nil
+}
+
 // getOrAssignEphemeralShard assigns an ephemeral shard that does not yet exist
 // in storage. It submits the request to the batcher and, on a version conflict
 // (concurrent assignment by another goroutine), retries with exponential backoff.

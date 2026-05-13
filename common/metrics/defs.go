@@ -905,6 +905,9 @@ const (
 	// ShardDistributorClientWatchNamespaceStateScope tracks WatchNamespaceState calls made by service to shard distributor
 	ShardDistributorClientWatchNamespaceStateScope
 
+	// ShardDistributorClientInspectShardScope tracks InspectShard calls made by service to shard distributor
+	ShardDistributorClientInspectShardScope
+
 	// ShardDistributorExecutorClientHeartbeatScope tracks Heartbeat calls made by executor to shard distributor
 	ShardDistributorExecutorClientHeartbeatScope
 
@@ -1508,6 +1511,9 @@ const (
 	// ShardDistributorLeaderScope tracks leader election state
 	ShardDistributorLeaderScope
 
+	// ShardDistributorInspectShardScope tracks InspectShard API calls received by service
+	ShardDistributorInspectShardScope
+
 	NumShardDistributorScopes
 )
 
@@ -1896,6 +1902,7 @@ var ScopeDefs = map[ServiceIdx]map[ScopeIdx]scopeDefinition{
 		ShardDistributorClientGetNamespaceStateScope:   {operation: "ShardDistributorClientGetNamespaceState"},
 		ShardDistributorClientListNamespacesScope:      {operation: "ShardDistributorClientListNamespaces"},
 		ShardDistributorClientWatchNamespaceStateScope: {operation: "ShardDistributorClientWatchNamespaceState"},
+		ShardDistributorClientInspectShardScope:        {operation: "ShardDistributorClientInspectShard"},
 		ShardDistributorExecutorClientHeartbeatScope:   {operation: "ShardDistributorExecutorHeartbeat"},
 
 		LoadBalancerScope: {operation: "RRLoadBalancer"},
@@ -2202,6 +2209,7 @@ var ScopeDefs = map[ServiceIdx]map[ScopeIdx]scopeDefinition{
 		ShardDistributorStoreDeleteAssignedStatesScope:             {operation: "StoreDeleteAssignedStates"},
 		ShardDistributorWatchScope:                                 {operation: "Watch"},
 		ShardDistributorLeaderScope:                                {operation: "Leader"},
+		ShardDistributorInspectShardScope:                          {operation: "InspectShard"},
 	},
 }
 

@@ -83,6 +83,26 @@ func (mr *MockClientMockRecorder) GetShardOwner(arg0, arg1 any, arg2 ...any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShardOwner", reflect.TypeOf((*MockClient)(nil).GetShardOwner), varargs...)
 }
 
+// InspectShard mocks base method.
+func (m *MockClient) InspectShard(arg0 context.Context, arg1 *types.GetShardOwnerRequest, arg2 ...yarpc.CallOption) (*types.GetShardOwnerResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "InspectShard", varargs...)
+	ret0, _ := ret[0].(*types.GetShardOwnerResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InspectShard indicates an expected call of InspectShard.
+func (mr *MockClientMockRecorder) InspectShard(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InspectShard", reflect.TypeOf((*MockClient)(nil).InspectShard), varargs...)
+}
+
 // ListNamespaces mocks base method.
 func (m *MockClient) ListNamespaces(arg0 context.Context, arg1 *types.ListNamespacesRequest, arg2 ...yarpc.CallOption) (*types.ListNamespacesResponse, error) {
 	m.ctrl.T.Helper()

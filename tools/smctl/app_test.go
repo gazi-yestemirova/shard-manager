@@ -43,6 +43,7 @@ func TestBuildCommand_help_listsRootFlagsAndCommands(t *testing.T) {
 	for _, want := range []string{
 		"smctl",
 		"namespace",
+		"shard",
 		"--" + FlagNamespace,
 		"--" + FlagAddress,
 		"--" + FlagTransport,
