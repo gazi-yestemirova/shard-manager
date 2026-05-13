@@ -61,6 +61,13 @@ service ShardDistributorAPI {
   // GetDrainedShards returns the list of shard keys currently marked as
   // drained for the namespace.
   rpc GetDrainedShards(GetDrainedShardsRequest) returns (GetDrainedShardsResponse);
+
+  // ForceResetNamespace deletes all etcd state for a namespace: leader key,
+  // executor heartbeats/status/metadata, shard assignments, and shard
+  // statistics. The namespace itself remains configured; executors will
+  // re-register on their next heartbeat and the new leader will rebuild
+  // assignments
+  rpc ForceResetNamespace(ForceResetNamespaceRequest) returns (ForceResetNamespaceResponse);
 }
 
 message GetShardOwnerRequest {
@@ -189,4 +196,13 @@ message GetDrainedShardsRequest {
 message GetDrainedShardsResponse {
   string namespace = 1;
   repeated string shard_keys = 2;
+}
+
+message ForceResetNamespaceRequest {
+  string namespace = 1;
+}
+
+message ForceResetNamespaceResponse {
+  // deleted_keys is the number of etcd keys removed under the namespace prefix
+  int64 deleted_keys = 1;
 }

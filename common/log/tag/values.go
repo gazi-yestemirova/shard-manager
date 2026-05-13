@@ -461,6 +461,7 @@ var (
 	ShardDistributorClientOperationDrainShards         = clientOperation("shard-distributor-drain-shards")
 	ShardDistributorClientOperationUndrainShards       = clientOperation("shard-distributor-undrain-shards")
 	ShardDistributorClientOperationGetDrainedShards    = clientOperation("shard-distributor-get-drained-shards")
+	ShardDistributorClientOperationForceResetNamespace = clientOperation("shard-distributor-force-reset-namespace")
 	ShardDistributorExecutorClientOperationHeartbeat   = clientOperation("shard-distributor-executor-heartbeat")
 )
 

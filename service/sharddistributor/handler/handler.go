@@ -33,6 +33,7 @@ import (
 	"github.com/cadence-workflow/shard-manager/common/backoff"
 	"github.com/cadence-workflow/shard-manager/common/clock"
 	"github.com/cadence-workflow/shard-manager/common/log"
+	"github.com/cadence-workflow/shard-manager/common/log/tag"
 	"github.com/cadence-workflow/shard-manager/common/types"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/config"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/store"
@@ -268,6 +269,35 @@ func (h *handlerImpl) GetNamespaceState(ctx context.Context, request *types.GetN
 		Namespace: request.GetNamespace(),
 		Executors: executors,
 	}, nil
+}
+
+// ForceResetNamespace deletes every key under the namespace prefix in storage.
+// The namespace must be present in the static service config; the call fails
+// fast with NamespaceNotFoundError otherwise
+func (h *handlerImpl) ForceResetNamespace(ctx context.Context, request *types.ForceResetNamespaceRequest) (resp *types.ForceResetNamespaceResponse, retError error) {
+	defer func() { log.CapturePanic(recover(), h.logger, &retError) }()
+
+	h.startWG.Wait()
+
+	namespace := request.GetNamespace()
+	namespaceIdx := slices.IndexFunc(h.shardDistributionCfg.Namespaces, func(n config.Namespace) bool {
+		return n.Name == namespace
+	})
+	if namespaceIdx == -1 {
+		return nil, &types.NamespaceNotFoundError{Namespace: namespace}
+	}
+
+	deleted, err := h.storage.ResetNamespace(ctx, namespace)
+	if err != nil {
+		return nil, &types.InternalServiceError{Message: fmt.Sprintf("failed to reset namespace: %v", err)}
+	}
+
+	h.logger.Info("Force reset namespace",
+		tag.ShardNamespace(namespace),
+		tag.Dynamic("deleted_keys", deleted),
+	)
+
+	return &types.ForceResetNamespaceResponse{DeletedKeys: deleted}, nil
 }
 
 // ListNamespaces returns the static namespace configuration loaded from the

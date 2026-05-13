@@ -835,6 +835,20 @@ func (s *executorStoreImpl) GetShardOwner(ctx context.Context, namespace, shardI
 	return s.shardCache.GetShardOwner(ctx, namespace, shardID)
 }
 
+// ResetNamespace deletes every key under <prefix>/<namespace>/ in a single
+// etcd op. This wipes the leader key, executor heartbeats/status/metadata,
+// shard assignments, and shard statistics. It is intentionally NOT guarded
+// by leadership: any concurrent leader write will subsequently fail its own
+// leadership-key revision check, which is the desired behaviour.
+func (s *executorStoreImpl) ResetNamespace(ctx context.Context, namespace string) (int64, error) {
+	prefix := etcdkeys.BuildNamespacePrefix(s.prefix, namespace) + "/"
+	resp, err := s.client.Delete(ctx, prefix, clientv3.WithPrefix())
+	if err != nil {
+		return 0, fmt.Errorf("delete namespace prefix %q: %w", prefix, err)
+	}
+	return resp.Deleted, nil
+}
+
 func (s *executorStoreImpl) GetExecutor(ctx context.Context, namespace string, executorID string) (*store.ShardOwner, error) {
 	return s.shardCache.GetExecutor(ctx, namespace, executorID)
 }

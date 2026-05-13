@@ -209,6 +209,21 @@ func (mr *MockStoreMockRecorder) RecordHeartbeat(ctx, namespace, executorID, sta
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordHeartbeat", reflect.TypeOf((*MockStore)(nil).RecordHeartbeat), ctx, namespace, executorID, state)
 }
 
+// ResetNamespace mocks base method.
+func (m *MockStore) ResetNamespace(ctx context.Context, namespace string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetNamespace", ctx, namespace)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResetNamespace indicates an expected call of ResetNamespace.
+func (mr *MockStoreMockRecorder) ResetNamespace(ctx, namespace any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetNamespace", reflect.TypeOf((*MockStore)(nil).ResetNamespace), ctx, namespace)
+}
+
 // SubscribeToAssignmentChanges mocks base method.
 func (m *MockStore) SubscribeToAssignmentChanges(ctx context.Context, namespace string) (<-chan map[*ShardOwner][]string, func(), error) {
 	m.ctrl.T.Helper()

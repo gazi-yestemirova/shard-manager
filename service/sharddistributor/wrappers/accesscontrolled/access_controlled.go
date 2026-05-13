@@ -77,6 +77,13 @@ func (a *accessControlledHandler) ListNamespaces(ctx context.Context, req *types
 	return a.Handler.ListNamespaces(ctx, req)
 }
 
+func (a *accessControlledHandler) ForceResetNamespace(ctx context.Context, req *types.ForceResetNamespaceRequest) (*types.ForceResetNamespaceResponse, error) {
+	if err := a.authorize(ctx, "ForceResetNamespace", req.GetNamespace(), authorization.PermissionAdmin); err != nil {
+		return nil, err
+	}
+	return a.Handler.ForceResetNamespace(ctx, req)
+}
+
 func (a *accessControlledHandler) authorize(ctx context.Context, apiName, namespace string, permission authorization.Permission) error {
 	result, err := a.authorizer.Authorize(ctx, &authorization.Attributes{
 		APIName:    apiName,

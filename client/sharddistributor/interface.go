@@ -45,6 +45,7 @@ type Client interface {
 	DrainShards(context.Context, *types.DrainShardsRequest, ...yarpc.CallOption) (*types.DrainShardsResponse, error)
 	UndrainShards(context.Context, *types.UndrainShardsRequest, ...yarpc.CallOption) (*types.UndrainShardsResponse, error)
 	GetDrainedShards(context.Context, *types.GetDrainedShardsRequest, ...yarpc.CallOption) (*types.GetDrainedShardsResponse, error)
+	ForceResetNamespace(context.Context, *types.ForceResetNamespaceRequest, ...yarpc.CallOption) (*types.ForceResetNamespaceResponse, error)
 }
 
 type WatchNamespaceStateClient interface {

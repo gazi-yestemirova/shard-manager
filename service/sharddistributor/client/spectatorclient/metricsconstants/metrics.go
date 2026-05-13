@@ -10,6 +10,7 @@ const (
 	ShardDistributorSpectatorDrainShardsOperationTagName         = "ShardDistributorSpectatorDrainShards"
 	ShardDistributorSpectatorUndrainShardsOperationTagName       = "ShardDistributorSpectatorUndrainShards"
 	ShardDistributorSpectatorGetDrainedShardsOperationTagName    = "ShardDistributorSpectatorGetDrainedShards"
+	ShardDistributorSpectatorForceResetNamespaceOperationTagName = "ShardDistributorSpectatorForceResetNamespace"
 
 	// Counter metrics
 	ShardDistributorSpectatorClientRequests   = "shard_distributor_spectator_client_requests"

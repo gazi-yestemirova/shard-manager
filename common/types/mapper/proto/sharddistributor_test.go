@@ -105,6 +105,18 @@ func TestFromShardDistributorListNamespacesResponse(t *testing.T) {
 	}
 }
 
+func TestFromShardDistributorForceResetNamespaceRequest(t *testing.T) {
+	for _, item := range []*types.ForceResetNamespaceRequest{nil, {}, &testdata.ShardDistributorForceResetNamespaceRequest} {
+		assert.Equal(t, item, ToShardDistributorForceResetNamespaceRequest(FromShardDistributorForceResetNamespaceRequest(item)))
+	}
+}
+
+func TestFromShardDistributorForceResetNamespaceResponse(t *testing.T) {
+	for _, item := range []*types.ForceResetNamespaceResponse{nil, {}, &testdata.ShardDistributorForceResetNamespaceResponse} {
+		assert.Equal(t, item, ToShardDistributorForceResetNamespaceResponse(FromShardDistributorForceResetNamespaceResponse(item)))
+	}
+}
+
 // --- Fuzz tests for sharddistributor mapper functions ---
 
 // ExecutorStatusFuzzer generates valid ExecutorStatus enum values (0-3: INVALID, ACTIVE, DRAINING, DRAINED).
@@ -268,4 +280,12 @@ func TestListNamespacesResponseFuzz(t *testing.T) {
 	testutils.RunMapperFuzzTest(t, FromShardDistributorListNamespacesResponse, ToShardDistributorListNamespacesResponse,
 		testutils.WithCustomFuncs(ListNamespacesResponseFuzzer),
 	)
+}
+
+func TestForceResetNamespaceRequestFuzz(t *testing.T) {
+	testutils.RunMapperFuzzTest(t, FromShardDistributorForceResetNamespaceRequest, ToShardDistributorForceResetNamespaceRequest)
+}
+
+func TestForceResetNamespaceResponseFuzz(t *testing.T) {
+	testutils.RunMapperFuzzTest(t, FromShardDistributorForceResetNamespaceResponse, ToShardDistributorForceResetNamespaceResponse)
 }

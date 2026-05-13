@@ -1098,6 +1098,67 @@ func TestCommitGuardedOps_GuardError(t *testing.T) {
 	assert.Contains(t, err.Error(), "apply transaction guard")
 }
 
+// TestResetNamespace verifies that ResetNamespace removes every key under the
+// namespace prefix in a single etcd op, regardless of the executor topology.
+func TestResetNamespace(t *testing.T) {
+	tc := testhelper.SetupStoreTestCluster(t)
+	executorStore := createStore(t, tc)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	t.Run("EmptyNamespace_NoError_NoDeletions", func(t *testing.T) {
+		emptyNs := tc.Namespace + "-empty"
+		deleted, err := executorStore.ResetNamespace(ctx, emptyNs)
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), deleted)
+	})
+
+	t.Run("DeletesAllExecutorKeys_LeavesOtherNamespacesIntact", func(t *testing.T) {
+		// Seed two executors in the target namespace plus assignments.
+		executorA := "reset-exec-a"
+		executorB := "reset-exec-b"
+		require.NoError(t, executorStore.RecordHeartbeat(ctx, tc.Namespace, executorA, store.HeartbeatState{
+			Status:   types.ExecutorStatusACTIVE,
+			Metadata: map[string]string{"zone": "dca1"},
+		}))
+		require.NoError(t, executorStore.RecordHeartbeat(ctx, tc.Namespace, executorB, store.HeartbeatState{
+			Status: types.ExecutorStatusACTIVE,
+		}))
+		require.NoError(t, executorStore.AssignShard(ctx, tc.Namespace, "shard-1", executorA))
+		require.NoError(t, executorStore.AssignShard(ctx, tc.Namespace, "shard-2", executorB))
+
+		// Seed an executor in a sibling namespace that must not be touched.
+		siblingNs := tc.Namespace + "-sibling"
+		siblingExec := "sibling-exec"
+		require.NoError(t, executorStore.RecordHeartbeat(ctx, siblingNs, siblingExec, store.HeartbeatState{
+			Status: types.ExecutorStatusACTIVE,
+		}))
+
+		// Sanity-check the seed.
+		state, err := executorStore.GetState(ctx, tc.Namespace)
+		require.NoError(t, err)
+		require.Len(t, state.Executors, 2)
+
+		deleted, err := executorStore.ResetNamespace(ctx, tc.Namespace)
+		require.NoError(t, err)
+		assert.Greater(t, deleted, int64(0), "should report a positive delete count")
+
+		// Target namespace is empty. Trailing slash mirrors the delete-side
+		// convention so we don't accidentally count sibling-namespace keys
+		// when one namespace name is a prefix substring of another.
+		afterPrefix := etcdkeys.BuildNamespacePrefix(tc.EtcdPrefix, tc.Namespace) + "/"
+		resp, err := tc.Client.Get(ctx, afterPrefix, clientv3.WithPrefix())
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), resp.Count, "no keys should remain under namespace prefix")
+
+		// Sibling namespace is untouched.
+		siblingPrefix := etcdkeys.BuildNamespacePrefix(tc.EtcdPrefix, siblingNs) + "/"
+		respSibling, err := tc.Client.Get(ctx, siblingPrefix, clientv3.WithPrefix())
+		require.NoError(t, err)
+		assert.Greater(t, respSibling.Count, int64(0), "sibling namespace must not be wiped")
+	})
+}
+
 func createStore(t *testing.T, tc *testhelper.StoreTestCluster) store.Store {
 	t.Helper()
 

@@ -39,6 +39,12 @@ func (c *sharddistributorClient) DrainShards(ctx context.Context, dp1 *types.Dra
 	return c.client.DrainShards(ctx, dp1, p1...)
 }
 
+func (c *sharddistributorClient) ForceResetNamespace(ctx context.Context, fp1 *types.ForceResetNamespaceRequest, p1 ...yarpc.CallOption) (fp2 *types.ForceResetNamespaceResponse, err error) {
+	ctx, cancel := createContext(ctx, c.timeout)
+	defer cancel()
+	return c.client.ForceResetNamespace(ctx, fp1, p1...)
+}
+
 func (c *sharddistributorClient) GetDrainedShards(ctx context.Context, gp1 *types.GetDrainedShardsRequest, p1 ...yarpc.CallOption) (gp2 *types.GetDrainedShardsResponse, err error) {
 	ctx, cancel := createContext(ctx, c.timeout)
 	defer cancel()

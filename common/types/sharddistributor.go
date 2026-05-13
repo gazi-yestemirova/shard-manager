@@ -234,6 +234,29 @@ func (v *NamespaceConfig) GetShardNum() (o int64) {
 	return
 }
 
+type ForceResetNamespaceRequest struct {
+	Namespace string
+}
+
+func (v *ForceResetNamespaceRequest) GetNamespace() (o string) {
+	if v != nil {
+		return v.Namespace
+	}
+	return
+}
+
+type ForceResetNamespaceResponse struct {
+	// DeletedKeys is the number of etcd keys removed under the namespace prefix
+	DeletedKeys int64
+}
+
+func (v *ForceResetNamespaceResponse) GetDeletedKeys() (o int64) {
+	if v != nil {
+		return v.DeletedKeys
+	}
+	return
+}
+
 type NamespaceNotFoundError struct {
 	Namespace string
 }

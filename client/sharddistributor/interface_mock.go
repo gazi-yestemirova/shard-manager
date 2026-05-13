@@ -63,6 +63,26 @@ func (mr *MockClientMockRecorder) DrainShards(arg0, arg1 any, arg2 ...any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DrainShards", reflect.TypeOf((*MockClient)(nil).DrainShards), varargs...)
 }
 
+// ForceResetNamespace mocks base method.
+func (m *MockClient) ForceResetNamespace(arg0 context.Context, arg1 *types.ForceResetNamespaceRequest, arg2 ...yarpc.CallOption) (*types.ForceResetNamespaceResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ForceResetNamespace", varargs...)
+	ret0, _ := ret[0].(*types.ForceResetNamespaceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ForceResetNamespace indicates an expected call of ForceResetNamespace.
+func (mr *MockClientMockRecorder) ForceResetNamespace(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForceResetNamespace", reflect.TypeOf((*MockClient)(nil).ForceResetNamespace), varargs...)
+}
+
 // GetDrainedShards mocks base method.
 func (m *MockClient) GetDrainedShards(arg0 context.Context, arg1 *types.GetDrainedShardsRequest, arg2 ...yarpc.CallOption) (*types.GetDrainedShardsResponse, error) {
 	m.ctrl.T.Helper()
