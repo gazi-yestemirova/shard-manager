@@ -13,7 +13,6 @@ const (
 
 	FlagNamespace = "namespace"
 	FlagShardKey  = "shard-key"
-	FlagYes       = "yes"
 )
 
 // Connection defaults for talking to a locally-running shard-manager.

@@ -1,13 +1,11 @@
 package smctl
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	cliv3 "github.com/urfave/cli/v3"
 
@@ -28,7 +26,6 @@ func namespaceCommand(cf ClientFactory) *cliv3.Command {
 		Description: "Use --namespace/-n on the root command to identify the target namespace.",
 		Commands: []*cliv3.Command{
 			namespaceStateCommand(cf),
-			namespaceForceResetCommand(cf),
 		},
 	}
 }
@@ -91,107 +88,4 @@ func resolveWriter(cmd *cliv3.Command) io.Writer {
 		}
 	}
 	return os.Stdout
-}
-
-// resolveReader returns the reader to use for interactive prompts. Mirrors
-// resolveWriter: tests set Reader on the root command and subcommand Reader
-// fields are auto-populated by urfave/cli/v3.
-func resolveReader(cmd *cliv3.Command) io.Reader {
-	if cmd != nil {
-		if root := cmd.Root(); root != nil && root.Reader != nil {
-			return root.Reader
-		}
-	}
-	return os.Stdin
-}
-
-// namespaceForceResetCommand wipes all etcd state for a namespace by calling
-// shard-manager's ForceResetNamespace API. The command requires the operator
-// to retype the target namespace name when run interactively; --yes skips the
-// prompt for scripted invocations.
-func namespaceForceResetCommand(cf ClientFactory) *cliv3.Command {
-	return &cliv3.Command{
-		Name:    "force-reset",
-		Aliases: []string{"fr"},
-		Usage:   "Delete all etcd state for a namespace (admin)",
-		Description: "Calls ForceResetNamespace on shard-manager. Wipes the leader key, " +
-			"executor heartbeats, shard assignments, and statistics for the namespace. " +
-			"Executors will re-register on their next heartbeat. " +
-			"Without --yes, the operator must retype the namespace name to confirm.",
-		Flags: []cliv3.Flag{
-			&cliv3.BoolFlag{
-				Name:    FlagYes,
-				Aliases: []string{"y"},
-				Usage:   "skip the interactive confirmation prompt",
-			},
-		},
-		Action: func(ctx context.Context, cmd *cliv3.Command) error {
-			return runForceResetNamespace(ctx, cmd, resolveWriter(cmd), resolveReader(cmd), cf)
-		},
-	}
-}
-
-func runForceResetNamespace(
-	ctx context.Context,
-	cmd *cliv3.Command,
-	out io.Writer,
-	in io.Reader,
-	cf ClientFactory,
-) error {
-	namespace := cmd.String(FlagNamespace)
-	if namespace == "" {
-		return fmt.Errorf("--%s is required", FlagNamespace)
-	}
-
-	if !cmd.Bool(FlagYes) {
-		if err := confirmNamespace(out, in, namespace); err != nil {
-			return err
-		}
-	}
-
-	client, err := cf.ShardManagerClient(cmd)
-	if err != nil {
-		return err
-	}
-
-	callCtx, cancel := context.WithTimeout(ctx, cmd.Duration(FlagContextTimeout))
-	defer cancel()
-
-	resp, err := client.ForceResetNamespace(callCtx, &types.ForceResetNamespaceRequest{
-		Namespace: namespace,
-	})
-	if err != nil {
-		return fmt.Errorf("ForceResetNamespace: %w", err)
-	}
-
-	enc := json.NewEncoder(out)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(resp); err != nil {
-		return fmt.Errorf("encode response: %w", err)
-	}
-	return nil
-}
-
-// confirmNamespace prompts the operator to retype the namespace name and
-// returns an error if the typed value does not match exactly. The compare
-// is case-sensitive; trimming whitespace only is safe and forgives
-// trailing newlines from interactive shells.
-func confirmNamespace(out io.Writer, in io.Reader, namespace string) error {
-	fmt.Fprintf(out,
-		"This will DELETE all etcd state for namespace %q. "+
-			"Retype the namespace to confirm (or pass --%s): ",
-		namespace, FlagYes,
-	)
-
-	scanner := bufio.NewScanner(in)
-	if !scanner.Scan() {
-		if err := scanner.Err(); err != nil {
-			return fmt.Errorf("read confirmation: %w", err)
-		}
-		return fmt.Errorf("confirmation aborted: no input received")
-	}
-	if got := strings.TrimSpace(scanner.Text()); got != namespace {
-		return fmt.Errorf("confirmation mismatch: typed %q, expected %q", got, namespace)
-	}
-	return nil
 }
