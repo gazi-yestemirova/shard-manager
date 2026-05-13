@@ -899,6 +899,9 @@ const (
 	// ShardDistributorClientGetNamespaceStateScope tracks GetNamespaceState calls made by service to shard distributor
 	ShardDistributorClientGetNamespaceStateScope
 
+	// ShardDistributorClientListNamespacesScope tracks ListNamespaces calls made by service to shard distributor
+	ShardDistributorClientListNamespacesScope
+
 	// ShardDistributorClientWatchNamespaceStateScope tracks WatchNamespaceState calls made by service to shard distributor
 	ShardDistributorClientWatchNamespaceStateScope
 
@@ -1916,6 +1919,7 @@ var ScopeDefs = map[ServiceIdx]map[ScopeIdx]scopeDefinition{
 
 		ShardDistributorClientGetShardOwnerScope:       {operation: "ShardDistributorClientGetShardOwner"},
 		ShardDistributorClientGetNamespaceStateScope:   {operation: "ShardDistributorClientGetNamespaceState"},
+		ShardDistributorClientListNamespacesScope:      {operation: "ShardDistributorClientListNamespaces"},
 		ShardDistributorClientWatchNamespaceStateScope: {operation: "ShardDistributorClientWatchNamespaceState"},
 		ShardDistributorClientInspectShardScope:        {operation: "ShardDistributorClientInspectShard"},
 		ShardDistributorClientDrainShardsScope:         {operation: "ShardDistributorClientDrainShards"},

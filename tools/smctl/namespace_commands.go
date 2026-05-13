@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
+	"strconv"
+	"text/tabwriter"
 
 	cliv3 "github.com/urfave/cli/v3"
 
@@ -26,8 +29,87 @@ func namespaceCommand(cf ClientFactory) *cliv3.Command {
 		Description: "Use --namespace/-n on the root command to identify the target namespace.",
 		Commands: []*cliv3.Command{
 			namespaceStateCommand(cf),
+			namespaceListCommand(cf),
 		},
 	}
+}
+
+// namespaceListCommand lists all namespaces in the shard-manager
+func namespaceListCommand(cf ClientFactory) *cliv3.Command {
+	return &cliv3.Command{
+		Name:        "list",
+		Aliases:     []string{"ls"},
+		Usage:       "List all namespaces configured on the shard-manager fleet",
+		Description: "Calls ListNamespaces on shard-manager and prints the response as a table (or JSON with --json).",
+		Flags: []cliv3.Flag{
+			&cliv3.BoolFlag{
+				Name:    "json",
+				Aliases: []string{"j"},
+				Usage:   "Print the response as indented JSON instead of a table.",
+			},
+		},
+		Action: func(ctx context.Context, cmd *cliv3.Command) error {
+			return runListNamespaces(ctx, cmd, resolveWriter(cmd), cf)
+		},
+	}
+}
+
+func runListNamespaces(
+	ctx context.Context,
+	cmd *cliv3.Command,
+	out io.Writer,
+	cf ClientFactory,
+) error {
+	client, err := cf.ShardManagerClient(cmd)
+	if err != nil {
+		return err
+	}
+
+	callCtx, cancel := context.WithTimeout(ctx, cmd.Duration(FlagContextTimeout))
+	defer cancel()
+
+	resp, err := client.ListNamespaces(callCtx, &types.ListNamespacesRequest{})
+	if err != nil {
+		return fmt.Errorf("ListNamespaces: %w", err)
+	}
+
+	if cmd.Bool("json") {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(resp); err != nil {
+			return fmt.Errorf("encode response: %w", err)
+		}
+		return nil
+	}
+
+	return renderNamespacesTable(out, resp.GetNamespaces())
+}
+
+// renderNamespacesTable writes a tab-aligned table to output
+func renderNamespacesTable(out io.Writer, namespaces []*types.NamespaceConfig) error {
+	sorted := make([]*types.NamespaceConfig, 0, len(namespaces))
+	for _, ns := range namespaces {
+		if ns == nil {
+			continue
+		}
+		sorted = append(sorted, ns)
+	}
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].GetName() < sorted[j].GetName() })
+
+	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
+	if _, err := fmt.Fprintln(w, "NAME\tTYPE\tMODE\tSHARDS"); err != nil {
+		return err
+	}
+	for _, ns := range sorted {
+		shards := "-"
+		if ns.GetShardNum() > 0 {
+			shards = strconv.FormatInt(ns.GetShardNum(), 10)
+		}
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", ns.GetName(), ns.GetType(), ns.GetMode(), shards); err != nil {
+			return err
+		}
+	}
+	return w.Flush()
 }
 
 // namespaceStateCommand prints the current state of a namespace by calling

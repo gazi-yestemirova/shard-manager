@@ -160,6 +160,26 @@ func (c *sharddistributorClient) InspectShard(ctx context.Context, gp1 *types.Ge
 	return
 }
 
+func (c *sharddistributorClient) ListNamespaces(ctx context.Context, lp1 *types.ListNamespacesRequest, p1 ...yarpc.CallOption) (lp2 *types.ListNamespacesResponse, err error) {
+	fakeErr := c.fakeErrFn(c.errorRate)
+	var forwardCall bool
+	if forwardCall = c.forwardCallFn(fakeErr); forwardCall {
+		lp2, err = c.client.ListNamespaces(ctx, lp1, p1...)
+	}
+
+	if fakeErr != nil {
+		c.logger.Error(msgShardDistributorInjectedFakeErr,
+			tag.ShardDistributorClientOperationListNamespaces,
+			tag.Error(fakeErr),
+			tag.Bool(forwardCall),
+			tag.ClientError(err),
+		)
+		err = fakeErr
+		return
+	}
+	return
+}
+
 func (c *sharddistributorClient) UndrainShards(ctx context.Context, up1 *types.UndrainShardsRequest, p1 ...yarpc.CallOption) (up2 *types.UndrainShardsResponse, err error) {
 	fakeErr := c.fakeErrFn(c.errorRate)
 	var forwardCall bool

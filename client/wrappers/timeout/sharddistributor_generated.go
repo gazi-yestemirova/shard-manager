@@ -69,6 +69,12 @@ func (c *sharddistributorClient) InspectShard(ctx context.Context, gp1 *types.Ge
 	return c.client.InspectShard(ctx, gp1, p1...)
 }
 
+func (c *sharddistributorClient) ListNamespaces(ctx context.Context, lp1 *types.ListNamespacesRequest, p1 ...yarpc.CallOption) (lp2 *types.ListNamespacesResponse, err error) {
+	ctx, cancel := createContext(ctx, c.timeout)
+	defer cancel()
+	return c.client.ListNamespaces(ctx, lp1, p1...)
+}
+
 func (c *sharddistributorClient) UndrainShards(ctx context.Context, up1 *types.UndrainShardsRequest, p1 ...yarpc.CallOption) (up2 *types.UndrainShardsResponse, err error) {
 	ctx, cancel := createContext(ctx, c.timeout)
 	defer cancel()

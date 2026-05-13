@@ -163,6 +163,26 @@ func (mr *MockClientMockRecorder) InspectShard(arg0, arg1 any, arg2 ...any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InspectShard", reflect.TypeOf((*MockClient)(nil).InspectShard), varargs...)
 }
 
+// ListNamespaces mocks base method.
+func (m *MockClient) ListNamespaces(arg0 context.Context, arg1 *types.ListNamespacesRequest, arg2 ...yarpc.CallOption) (*types.ListNamespacesResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListNamespaces", varargs...)
+	ret0, _ := ret[0].(*types.ListNamespacesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListNamespaces indicates an expected call of ListNamespaces.
+func (mr *MockClientMockRecorder) ListNamespaces(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaces", reflect.TypeOf((*MockClient)(nil).ListNamespaces), varargs...)
+}
+
 // UndrainShards mocks base method.
 func (m *MockClient) UndrainShards(arg0 context.Context, arg1 *types.UndrainShardsRequest, arg2 ...yarpc.CallOption) (*types.UndrainShardsResponse, error) {
 	m.ctrl.T.Helper()
