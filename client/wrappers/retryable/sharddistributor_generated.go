@@ -97,22 +97,22 @@ func (c *sharddistributorClient) InspectShard(ctx context.Context, gp1 *types.Ge
 	return resp, err
 }
 
-func (c *sharddistributorClient) UndrainShards(ctx context.Context, up1 *types.UndrainShardsRequest, p1 ...yarpc.CallOption) (up2 *types.UndrainShardsResponse, err error) {
-	var resp *types.UndrainShardsResponse
+func (c *sharddistributorClient) ListNamespaces(ctx context.Context, lp1 *types.ListNamespacesRequest, p1 ...yarpc.CallOption) (lp2 *types.ListNamespacesResponse, err error) {
+	var resp *types.ListNamespacesResponse
 	op := func(ctx context.Context) error {
 		var err error
-		resp, err = c.client.UndrainShards(ctx, up1, p1...)
+		resp, err = c.client.ListNamespaces(ctx, lp1, p1...)
 		return err
 	}
 	err = c.throttleRetry.Do(ctx, op)
 	return resp, err
 }
 
-func (c *sharddistributorClient) ListNamespaces(ctx context.Context, lp1 *types.ListNamespacesRequest, p1 ...yarpc.CallOption) (lp2 *types.ListNamespacesResponse, err error) {
-	var resp *types.ListNamespacesResponse
+func (c *sharddistributorClient) UndrainShards(ctx context.Context, up1 *types.UndrainShardsRequest, p1 ...yarpc.CallOption) (up2 *types.UndrainShardsResponse, err error) {
+	var resp *types.UndrainShardsResponse
 	op := func(ctx context.Context) error {
 		var err error
-		resp, err = c.client.ListNamespaces(ctx, lp1, p1...)
+		resp, err = c.client.UndrainShards(ctx, up1, p1...)
 		return err
 	}
 	err = c.throttleRetry.Do(ctx, op)
