@@ -26,7 +26,6 @@ import (
 
 	sharddistributorv1 "github.com/cadence-workflow/shard-manager/.gen/proto/sharddistributor/v1"
 	"github.com/cadence-workflow/shard-manager/common/types"
-	"github.com/cadence-workflow/shard-manager/common/types/mapper/errorutils"
 )
 
 func FromError(err error) error {
@@ -34,20 +33,17 @@ func FromError(err error) error {
 		return protobuf.NewError(yarpcerrors.CodeOK, "")
 	}
 
-	var (
-		ok       bool
-		typedErr error
-	)
-	if ok, typedErr = errorutils.ConvertError(err, fromInternalServiceError); ok {
-		return typedErr
-	} else if ok, typedErr = errorutils.ConvertError(err, fromBadRequestError); ok {
-		return typedErr
-	} else if ok, typedErr = errorutils.ConvertError(err, fromNamespaceNotFoundErr); ok {
-		return typedErr
-	} else if ok, typedErr = errorutils.ConvertError(err, fromShardNotFoundErr); ok {
-		return typedErr
-	} else if ok, typedErr = errorutils.ConvertError(err, fromShardDrainedErr); ok {
-		return typedErr
+	switch e := err.(type) {
+	case *types.InternalServiceError:
+		return fromInternalServiceError(e)
+	case *types.BadRequestError:
+		return fromBadRequestError(e)
+	case *types.NamespaceNotFoundError:
+		return fromNamespaceNotFoundErr(e)
+	case *types.ShardNotFoundError:
+		return fromShardNotFoundErr(e)
+	case *types.ShardDrainedError:
+		return fromShardDrainedErr(e)
 	}
 
 	return protobuf.NewError(yarpcerrors.CodeUnknown, err.Error())
