@@ -34,9 +34,7 @@ func namespaceCommand(cf ClientFactory) *cliv3.Command {
 	}
 }
 
-// namespaceListCommand lists all namespaces configured on the shard-manager
-// fleet by calling ListNamespaces. It does not consult any per-namespace state,
-// so the persistent --namespace flag is intentionally ignored.
+// namespaceListCommand lists all namespaces in the shard-manager
 func namespaceListCommand(cf ClientFactory) *cliv3.Command {
 	return &cliv3.Command{
 		Name:        "list",
@@ -87,9 +85,7 @@ func runListNamespaces(
 	return renderNamespacesTable(out, resp.GetNamespaces())
 }
 
-// renderNamespacesTable writes a tab-aligned table to out. We sort by name so
-// the output is stable across calls (the server preserves config order today,
-// but operators looking for a specific name shouldn't have to grep through it).
+// renderNamespacesTable writes a tab-aligned table to output
 func renderNamespacesTable(out io.Writer, namespaces []*types.NamespaceConfig) error {
 	sorted := make([]*types.NamespaceConfig, 0, len(namespaces))
 	for _, ns := range namespaces {
