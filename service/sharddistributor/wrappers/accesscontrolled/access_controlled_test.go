@@ -157,6 +157,58 @@ func TestAccessControlledHandler_BypassesAuthForUncheckedMethods(t *testing.T) {
 	require.NoError(t, wrapped.WatchNamespaceState(&types.WatchNamespaceStateRequest{Namespace: testNamespace}, nil))
 }
 
+func TestAccessControlledHandler_ForceResetNamespace(t *testing.T) {
+	tests := []struct {
+		name              string
+		authorizeResult   authorization.Result
+		authorizeErr      error
+		expectInnerCalled bool
+		expectErr         error
+	}{
+		{name: "allow -> inner called", authorizeResult: authorization.Result{Decision: authorization.DecisionAllow}, expectInnerCalled: true},
+		{name: "deny -> AccessDeniedError", authorizeResult: authorization.Result{Decision: authorization.DecisionDeny}, expectErr: errUnauthorized},
+		{name: "authorizer error -> propagated", authorizeErr: errAuthorizerBoom, expectErr: errAuthorizerBoom},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			inner := handler.NewMockHandler(ctrl)
+			authz := authorization.NewMockAuthorizer(ctrl)
+
+			authz.EXPECT().
+				Authorize(gomock.Any(), &authorization.Attributes{
+					APIName:    "ForceResetNamespace",
+					Namespace:  testNamespace,
+					Permission: authorization.PermissionAdmin,
+				}).
+				Return(tc.authorizeResult, tc.authorizeErr).
+				Times(1)
+
+			if tc.expectInnerCalled {
+				inner.EXPECT().
+					ForceResetNamespace(gomock.Any(), &types.ForceResetNamespaceRequest{Namespace: testNamespace}).
+					Return(&types.ForceResetNamespaceResponse{DeletedKeys: 5}, nil).
+					Times(1)
+			}
+
+			resp, err := NewHandler(inner, authz).ForceResetNamespace(
+				context.Background(),
+				&types.ForceResetNamespaceRequest{Namespace: testNamespace},
+			)
+
+			if tc.expectErr != nil {
+				assert.Nil(t, resp)
+				assert.ErrorIs(t, err, tc.expectErr)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, resp)
+			assert.Equal(t, int64(5), resp.DeletedKeys)
+		})
+	}
+}
+
 func TestAccessControlledHandler_ListNamespaces(t *testing.T) {
 	tests := []struct {
 		name              string

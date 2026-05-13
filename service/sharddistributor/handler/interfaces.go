@@ -50,6 +50,8 @@ type Handler interface {
 	WatchNamespaceState(*types.WatchNamespaceStateRequest, WatchNamespaceStateServer) error
 
 	ListNamespaces(context.Context, *types.ListNamespacesRequest) (*types.ListNamespacesResponse, error)
+
+	ForceResetNamespace(context.Context, *types.ForceResetNamespaceRequest) (*types.ForceResetNamespaceResponse, error)
 }
 
 type Executor interface {

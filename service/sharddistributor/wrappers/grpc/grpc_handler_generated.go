@@ -21,6 +21,11 @@ func NewGRPCHandler(h handler.Handler) GRPCHandler {
 	return GRPCHandler{h}
 }
 
+func (g GRPCHandler) ForceResetNamespace(ctx context.Context, request *sharddistributorv1.ForceResetNamespaceRequest) (*sharddistributorv1.ForceResetNamespaceResponse, error) {
+	response, err := g.h.ForceResetNamespace(ctx, proto.ToShardDistributorForceResetNamespaceRequest(request))
+	return proto.FromShardDistributorForceResetNamespaceResponse(response), proto.FromError(err)
+}
+
 func (g GRPCHandler) GetNamespaceState(ctx context.Context, request *sharddistributorv1.GetNamespaceStateRequest) (*sharddistributorv1.GetNamespaceStateResponse, error) {
 	response, err := g.h.GetNamespaceState(ctx, proto.ToShardDistributorGetNamespaceStateRequest(request))
 	return proto.FromShardDistributorGetNamespaceStateResponse(response), proto.FromError(err)

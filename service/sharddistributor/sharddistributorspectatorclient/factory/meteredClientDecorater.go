@@ -93,3 +93,20 @@ func (c *meteredShardDistributorClient) WatchNamespaceState(ctx context.Context,
 	}
 	return stream, err
 }
+
+func (c *meteredShardDistributorClient) ForceResetNamespace(ctx context.Context, request *types.ForceResetNamespaceRequest, opts ...yarpc.CallOption) (*types.ForceResetNamespaceResponse, error) {
+	scope := c.metricsScope.Tagged(map[string]string{
+		metrics.OperationTagName: metricsconstants.ShardDistributorSpectatorForceResetNamespaceOperationTagName,
+	})
+
+	scope.Counter(metricsconstants.ShardDistributorSpectatorClientRequests).Inc(1)
+
+	sw := scope.Timer(metricsconstants.ShardDistributorSpectatorClientLatency).Start()
+	response, err := c.client.ForceResetNamespace(ctx, request, opts...)
+	sw.Stop()
+
+	if err != nil {
+		scope.Counter(metricsconstants.ShardDistributorSpectatorClientFailures).Inc(1)
+	}
+	return response, err
+}

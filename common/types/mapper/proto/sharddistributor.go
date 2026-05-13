@@ -613,3 +613,43 @@ func toShardDistributorNamespaceConfig(t *sharddistributorv1.NamespaceConfig) *t
 		ShardNum: t.GetShardNum(),
 	}
 }
+
+// FromShardDistributorForceResetNamespaceRequest converts a types.ForceResetNamespaceRequest to a sharddistributor ForceResetNamespaceRequest.
+func FromShardDistributorForceResetNamespaceRequest(t *types.ForceResetNamespaceRequest) *sharddistributorv1.ForceResetNamespaceRequest {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.ForceResetNamespaceRequest{
+		Namespace: t.GetNamespace(),
+	}
+}
+
+// ToShardDistributorForceResetNamespaceRequest converts a sharddistributor ForceResetNamespaceRequest to a types.ForceResetNamespaceRequest.
+func ToShardDistributorForceResetNamespaceRequest(t *sharddistributorv1.ForceResetNamespaceRequest) *types.ForceResetNamespaceRequest {
+	if t == nil {
+		return nil
+	}
+	return &types.ForceResetNamespaceRequest{
+		Namespace: t.GetNamespace(),
+	}
+}
+
+// FromShardDistributorForceResetNamespaceResponse converts a types.ForceResetNamespaceResponse to a sharddistributor ForceResetNamespaceResponse.
+func FromShardDistributorForceResetNamespaceResponse(t *types.ForceResetNamespaceResponse) *sharddistributorv1.ForceResetNamespaceResponse {
+	if t == nil {
+		return nil
+	}
+	return &sharddistributorv1.ForceResetNamespaceResponse{
+		DeletedKeys: t.GetDeletedKeys(),
+	}
+}
+
+// ToShardDistributorForceResetNamespaceResponse converts a sharddistributor ForceResetNamespaceResponse to a types.ForceResetNamespaceResponse.
+func ToShardDistributorForceResetNamespaceResponse(t *sharddistributorv1.ForceResetNamespaceResponse) *types.ForceResetNamespaceResponse {
+	if t == nil {
+		return nil
+	}
+	return &types.ForceResetNamespaceResponse{
+		DeletedKeys: t.GetDeletedKeys(),
+	}
+}

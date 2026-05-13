@@ -458,6 +458,7 @@ var (
 	ShardDistributorClientOperationInspectShard        = clientOperation("shard-distributor-inspect-shard")
 	ShardDistributorClientOperationGetNamespaceState   = clientOperation("shard-distributor-get-namespace-state")
 	ShardDistributorClientOperationWatchNamespaceState = clientOperation("shard-distributor-watch-namespace-state")
+	ShardDistributorClientOperationForceResetNamespace = clientOperation("shard-distributor-force-reset-namespace")
 	ShardDistributorExecutorClientOperationHeartbeat   = clientOperation("shard-distributor-executor-heartbeat")
 )
 

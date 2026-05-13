@@ -90,4 +90,17 @@ type Store interface {
 	RecordHeartbeat(ctx context.Context, namespace, executorID string, state HeartbeatState) error
 
 	DeleteShardStats(ctx context.Context, namespace string, shardIDs []string, guard GuardFunc) error
+
+	// ResetNamespace deletes every key under the namespace prefix in storage,
+	// including the leader key, executor heartbeats/status/metadata, shard
+	// assignments, and shard statistics. The namespace itself stays configured
+	// at the service-config level; executors will re-register on their next
+	// heartbeat and the next leader will rebuild the assignment plan.
+	//
+	// This is intentionally NOT guarded by leadership: any in-flight leader
+	// writes will fail their own leadership guard once the leader key is gone,
+	// which is the desired outcome.
+	//
+	// Returns the number of keys removed by the underlying delete.
+	ResetNamespace(ctx context.Context, namespace string) (int64, error)
 }

@@ -40,6 +40,26 @@ func NewShardDistributorClient(client sharddistributor.Client, errorRate float64
 	}
 }
 
+func (c *sharddistributorClient) ForceResetNamespace(ctx context.Context, fp1 *types.ForceResetNamespaceRequest, p1 ...yarpc.CallOption) (fp2 *types.ForceResetNamespaceResponse, err error) {
+	fakeErr := c.fakeErrFn(c.errorRate)
+	var forwardCall bool
+	if forwardCall = c.forwardCallFn(fakeErr); forwardCall {
+		fp2, err = c.client.ForceResetNamespace(ctx, fp1, p1...)
+	}
+
+	if fakeErr != nil {
+		c.logger.Error(msgShardDistributorInjectedFakeErr,
+			tag.ShardDistributorClientOperationForceResetNamespace,
+			tag.Error(fakeErr),
+			tag.Bool(forwardCall),
+			tag.ClientError(err),
+		)
+		err = fakeErr
+		return
+	}
+	return
+}
+
 func (c *sharddistributorClient) GetNamespaceState(ctx context.Context, gp1 *types.GetNamespaceStateRequest, p1 ...yarpc.CallOption) (gp2 *types.GetNamespaceStateResponse, err error) {
 	fakeErr := c.fakeErrFn(c.errorRate)
 	var forwardCall bool

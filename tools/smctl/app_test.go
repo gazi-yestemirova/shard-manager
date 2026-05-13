@@ -66,8 +66,10 @@ func TestNamespaceCommand_help_listsSubcommands(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	out := buf.String()
-	if !strings.Contains(out, "state") {
-		t.Errorf("namespace help should list 'state' subcommand:\n%s", out)
+	for _, want := range []string{"state", "force-reset"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("namespace help should list %q subcommand:\n%s", want, out)
+		}
 	}
 }
 
@@ -243,6 +245,147 @@ func TestGetNamespaceState(t *testing.T) {
 			}
 			if err != nil {
 				t.Fatalf("Run: %v", err)
+			}
+			if tt.check != nil {
+				tt.check(t, buf.String())
+			}
+		})
+	}
+}
+
+func TestForceResetNamespace(t *testing.T) {
+	type setupResult struct {
+		client    sharddistributor.Client
+		clientErr error
+		stdin     string
+	}
+
+	tests := []struct {
+		name    string
+		args    []string
+		setup   func(t *testing.T, ctrl *gomock.Controller) setupResult
+		wantErr string
+		check   func(t *testing.T, stdout string)
+	}{
+		{
+			name: "success_with_yes_skips_prompt_and_returns_deleted_count",
+			args: []string{"smctl", "-n", "ns-1", "namespace", "force-reset", "--yes"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				mc := sharddistributor.NewMockClient(ctrl)
+				mc.EXPECT().
+					ForceResetNamespace(gomock.Any(), &types.ForceResetNamespaceRequest{Namespace: "ns-1"}).
+					Return(&types.ForceResetNamespaceResponse{DeletedKeys: 7}, nil)
+				return setupResult{client: mc}
+			},
+			check: func(t *testing.T, stdout string) {
+				var resp types.ForceResetNamespaceResponse
+				if err := json.Unmarshal([]byte(stdout), &resp); err != nil {
+					t.Fatalf("output is not valid JSON: %v\nout: %s", err, stdout)
+				}
+				if resp.DeletedKeys != 7 {
+					t.Errorf("DeletedKeys: got %d want %d", resp.DeletedKeys, 7)
+				}
+			},
+		},
+		{
+			name: "interactive_confirm_matches_namespace_proceeds",
+			args: []string{"smctl", "-n", "ns-1", "namespace", "force-reset"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				mc := sharddistributor.NewMockClient(ctrl)
+				mc.EXPECT().
+					ForceResetNamespace(gomock.Any(), &types.ForceResetNamespaceRequest{Namespace: "ns-1"}).
+					Return(&types.ForceResetNamespaceResponse{DeletedKeys: 1}, nil)
+				return setupResult{client: mc, stdin: "ns-1\n"}
+			},
+		},
+		{
+			name: "interactive_confirm_mismatch_aborts_without_calling_api",
+			args: []string{"smctl", "-n", "ns-1", "namespace", "force-reset"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				return setupResult{stdin: "wrong\n"}
+			},
+			wantErr: `confirmation mismatch`,
+		},
+		{
+			name: "interactive_confirm_empty_input_aborts",
+			args: []string{"smctl", "-n", "ns-1", "namespace", "force-reset"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				return setupResult{stdin: ""}
+			},
+			wantErr: `no input received`,
+		},
+		{
+			name:    "missing_namespace_flag",
+			args:    []string{"smctl", "namespace", "force-reset", "--yes"},
+			setup:   func(t *testing.T, ctrl *gomock.Controller) setupResult { return setupResult{} },
+			wantErr: `--` + FlagNamespace + ` is required`,
+		},
+		{
+			name: "API_error_propagates",
+			args: []string{"smctl", "-n", "ns-1", "namespace", "force-reset", "--yes"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				mc := sharddistributor.NewMockClient(ctrl)
+				mc.EXPECT().
+					ForceResetNamespace(gomock.Any(), &types.ForceResetNamespaceRequest{Namespace: "ns-1"}).
+					Return(nil, errors.New("etcd is down"))
+				return setupResult{client: mc}
+			},
+			wantErr: "etcd is down",
+		},
+		{
+			name: "factory_error_after_confirmation",
+			args: []string{"smctl", "-n", "ns-1", "namespace", "force-reset", "--yes"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				return setupResult{clientErr: errors.New("dial failed")}
+			},
+			wantErr: "dial failed",
+		},
+		{
+			name: "force_reset_alias_fr_works",
+			args: []string{"smctl", "-n", "ns-1", "namespace", "fr", "--yes"},
+			setup: func(t *testing.T, ctrl *gomock.Controller) setupResult {
+				mc := sharddistributor.NewMockClient(ctrl)
+				mc.EXPECT().
+					ForceResetNamespace(gomock.Any(), gomock.Any()).
+					Return(&types.ForceResetNamespaceResponse{}, nil)
+				return setupResult{client: mc}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			res := tt.setup(t, ctrl)
+
+			cf := NewMockClientFactory(ctrl)
+			cf.EXPECT().Close().Return(nil).Times(1)
+			// ShardManagerClient is only invoked after the confirmation passes.
+			if res.client != nil || res.clientErr != nil {
+				cf.EXPECT().ShardManagerClient(gomock.Any()).
+					Return(res.client, res.clientErr).
+					MaxTimes(1)
+			}
+
+			cmd := BuildCommandWithFactory(cf)
+			buf := new(bytes.Buffer)
+			cmd.Writer = buf
+			cmd.ErrWriter = buf
+			cmd.Reader = strings.NewReader(res.stdin)
+
+			err := cmd.Run(context.Background(), tt.args)
+
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil. out=%s", tt.wantErr, buf.String())
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("error: got %q want substring %q", err.Error(), tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Run: %v\nout: %s", err, buf.String())
 			}
 			if tt.check != nil {
 				tt.check(t, buf.String())

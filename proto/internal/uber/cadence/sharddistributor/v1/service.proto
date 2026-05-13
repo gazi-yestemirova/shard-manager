@@ -47,6 +47,14 @@ service ShardDistributorAPI {
   // ListNamespaces returns the static namespace configuration of the shard-manager fleet.
   // This reflects the server's loaded shardDistribution.namespaces config
   rpc ListNamespaces(ListNamespacesRequest) returns (ListNamespacesResponse);
+
+  // ForceResetNamespace deletes all etcd state for a namespace: leader key,
+  // executor heartbeats/status/metadata, shard assignments, and shard
+  // statistics. The namespace itself remains configured; executors will
+  // re-register on their next heartbeat and the new leader will rebuild
+  // assignments. This is an admin-only escape hatch for unrecoverable
+  // namespace state.
+  rpc ForceResetNamespace(ForceResetNamespaceRequest) returns (ForceResetNamespaceResponse);
 }
 
 message GetShardOwnerRequest {
@@ -140,4 +148,14 @@ message NamespaceConfig {
   string mode = 3;
   // ShardNum is the configured number of shards. Only for type="fixed".
   int64 shard_num = 4;
+}
+
+message ForceResetNamespaceRequest {
+  string namespace = 1;
+}
+
+message ForceResetNamespaceResponse {
+  // deleted_keys is the number of etcd keys removed under the namespace
+  // prefix. Operator-facing counter; clients should not assert exact values.
+  int64 deleted_keys = 1;
 }

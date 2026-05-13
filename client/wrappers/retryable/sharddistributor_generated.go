@@ -31,6 +31,17 @@ func NewShardDistributorClient(client sharddistributor.Client, policy backoff.Re
 	}
 }
 
+func (c *sharddistributorClient) ForceResetNamespace(ctx context.Context, fp1 *types.ForceResetNamespaceRequest, p1 ...yarpc.CallOption) (fp2 *types.ForceResetNamespaceResponse, err error) {
+	var resp *types.ForceResetNamespaceResponse
+	op := func(ctx context.Context) error {
+		var err error
+		resp, err = c.client.ForceResetNamespace(ctx, fp1, p1...)
+		return err
+	}
+	err = c.throttleRetry.Do(ctx, op)
+	return resp, err
+}
+
 func (c *sharddistributorClient) GetNamespaceState(ctx context.Context, gp1 *types.GetNamespaceStateRequest, p1 ...yarpc.CallOption) (gp2 *types.GetNamespaceStateResponse, err error) {
 	var resp *types.GetNamespaceStateResponse
 	op := func(ctx context.Context) error {
