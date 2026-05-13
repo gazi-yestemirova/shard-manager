@@ -42,6 +42,36 @@ func (m *MockHandler) EXPECT() *MockHandlerMockRecorder {
 	return m.recorder
 }
 
+// DrainShards mocks base method.
+func (m *MockHandler) DrainShards(arg0 context.Context, arg1 *types.DrainShardsRequest) (*types.DrainShardsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DrainShards", arg0, arg1)
+	ret0, _ := ret[0].(*types.DrainShardsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DrainShards indicates an expected call of DrainShards.
+func (mr *MockHandlerMockRecorder) DrainShards(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DrainShards", reflect.TypeOf((*MockHandler)(nil).DrainShards), arg0, arg1)
+}
+
+// GetDrainedShards mocks base method.
+func (m *MockHandler) GetDrainedShards(arg0 context.Context, arg1 *types.GetDrainedShardsRequest) (*types.GetDrainedShardsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDrainedShards", arg0, arg1)
+	ret0, _ := ret[0].(*types.GetDrainedShardsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDrainedShards indicates an expected call of GetDrainedShards.
+func (mr *MockHandlerMockRecorder) GetDrainedShards(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDrainedShards", reflect.TypeOf((*MockHandler)(nil).GetDrainedShards), arg0, arg1)
+}
+
 // GetNamespaceState mocks base method.
 func (m *MockHandler) GetNamespaceState(arg0 context.Context, arg1 *types.GetNamespaceStateRequest) (*types.GetNamespaceStateResponse, error) {
 	m.ctrl.T.Helper()
@@ -139,6 +169,21 @@ func (m *MockHandler) Stop() {
 func (mr *MockHandlerMockRecorder) Stop() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockHandler)(nil).Stop))
+}
+
+// UndrainShards mocks base method.
+func (m *MockHandler) UndrainShards(arg0 context.Context, arg1 *types.UndrainShardsRequest) (*types.UndrainShardsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UndrainShards", arg0, arg1)
+	ret0, _ := ret[0].(*types.UndrainShardsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UndrainShards indicates an expected call of UndrainShards.
+func (mr *MockHandlerMockRecorder) UndrainShards(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UndrainShards", reflect.TypeOf((*MockHandler)(nil).UndrainShards), arg0, arg1)
 }
 
 // WatchNamespaceState mocks base method.

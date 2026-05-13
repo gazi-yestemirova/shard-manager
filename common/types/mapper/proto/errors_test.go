@@ -36,6 +36,7 @@ func TestErrors(t *testing.T) {
 		&types.BadRequestError{Message: "bad request"},
 		&types.NamespaceNotFoundError{Namespace: "test-ns"},
 		&types.ShardNotFoundError{Namespace: "test-ns", ShardKey: "shard-1"},
+		&types.ShardDrainedError{Namespace: "test-ns", ShardKey: "shard-1"},
 	}
 	for _, err := range testCases {
 		t.Run(err.Error(), func(t *testing.T) {
