@@ -840,11 +840,6 @@ func (s *executorStoreImpl) GetShardOwner(ctx context.Context, namespace, shardI
 // shard assignments, and shard statistics. It is intentionally NOT guarded
 // by leadership: any concurrent leader write will subsequently fail its own
 // leadership-key revision check, which is the desired behaviour.
-//
-// We append a trailing "/" to the namespace prefix because etcdkeys.BuildNamespacePrefix
-// returns "<prefix>/<namespace>" without a separator. Without the slash a
-// WithPrefix() delete would also match sibling namespaces sharing a prefix
-// substring (e.g. resetting "foo" would wipe "foobar").
 func (s *executorStoreImpl) ResetNamespace(ctx context.Context, namespace string) (int64, error) {
 	prefix := etcdkeys.BuildNamespacePrefix(s.prefix, namespace) + "/"
 	resp, err := s.client.Delete(ctx, prefix, clientv3.WithPrefix())

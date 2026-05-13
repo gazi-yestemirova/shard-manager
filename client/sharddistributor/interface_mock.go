@@ -13,10 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
+	types "github.com/cadence-workflow/shard-manager/common/types"
 	gomock "go.uber.org/mock/gomock"
 	yarpc "go.uber.org/yarpc"
-
-	types "github.com/cadence-workflow/shard-manager/common/types"
 )
 
 // MockClient is a mock of Client interface.

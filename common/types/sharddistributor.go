@@ -246,8 +246,7 @@ func (v *ForceResetNamespaceRequest) GetNamespace() (o string) {
 }
 
 type ForceResetNamespaceResponse struct {
-	// DeletedKeys is the number of etcd keys removed under the namespace
-	// prefix. Operator-facing counter; clients should not assert exact values.
+	// DeletedKeys is the number of etcd keys removed under the namespace prefix
 	DeletedKeys int64
 }
 

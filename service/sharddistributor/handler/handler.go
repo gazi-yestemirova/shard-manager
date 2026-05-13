@@ -273,10 +273,7 @@ func (h *handlerImpl) GetNamespaceState(ctx context.Context, request *types.GetN
 
 // ForceResetNamespace deletes every key under the namespace prefix in storage.
 // The namespace must be present in the static service config; the call fails
-// fast with NamespaceNotFoundError otherwise (to block typos that would
-// otherwise wipe arbitrary prefixes that don't correspond to any configured
-// namespace). The metered wrapper records the call as a metric so operators
-// can answer "did a reset happen and when?" from dashboards.
+// fast with NamespaceNotFoundError otherwise
 func (h *handlerImpl) ForceResetNamespace(ctx context.Context, request *types.ForceResetNamespaceRequest) (resp *types.ForceResetNamespaceResponse, retError error) {
 	defer func() { log.CapturePanic(recover(), h.logger, &retError) }()
 

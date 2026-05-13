@@ -52,8 +52,7 @@ service ShardDistributorAPI {
   // executor heartbeats/status/metadata, shard assignments, and shard
   // statistics. The namespace itself remains configured; executors will
   // re-register on their next heartbeat and the new leader will rebuild
-  // assignments. This is an admin-only escape hatch for unrecoverable
-  // namespace state.
+  // assignments
   rpc ForceResetNamespace(ForceResetNamespaceRequest) returns (ForceResetNamespaceResponse);
 }
 
@@ -155,7 +154,6 @@ message ForceResetNamespaceRequest {
 }
 
 message ForceResetNamespaceResponse {
-  // deleted_keys is the number of etcd keys removed under the namespace
-  // prefix. Operator-facing counter; clients should not assert exact values.
+  // deleted_keys is the number of etcd keys removed under the namespace prefix
   int64 deleted_keys = 1;
 }
