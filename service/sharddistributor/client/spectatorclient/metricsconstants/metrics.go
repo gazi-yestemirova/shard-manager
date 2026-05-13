@@ -7,6 +7,9 @@ const (
 	ShardDistributorSpectatorInspectShardOperationTagName        = "ShardDistributorSpectatorInspectShard"
 	ShardDistributorSpectatorGetNamespaceStateOperationTagName   = "ShardDistributorSpectatorGetNamespaceState"
 	ShardDistributorSpectatorWatchNamespaceStateOperationTagName = "ShardDistributorSpectatorWatchNamespaceState"
+	ShardDistributorSpectatorDrainShardsOperationTagName         = "ShardDistributorSpectatorDrainShards"
+	ShardDistributorSpectatorUndrainShardsOperationTagName       = "ShardDistributorSpectatorUndrainShards"
+	ShardDistributorSpectatorGetDrainedShardsOperationTagName    = "ShardDistributorSpectatorGetDrainedShards"
 	ShardDistributorSpectatorForceResetNamespaceOperationTagName = "ShardDistributorSpectatorForceResetNamespace"
 
 	// Counter metrics

@@ -15,9 +15,14 @@ import (
 	"github.com/cadence-workflow/shard-manager/common/types/mapper/proto"
 )
 
-func (g sharddistributorClient) ForceResetNamespace(ctx context.Context, fp1 *types.ForceResetNamespaceRequest, p1 ...yarpc.CallOption) (fp2 *types.ForceResetNamespaceResponse, err error) {
-	response, err := g.c.ForceResetNamespace(ctx, proto.FromShardDistributorForceResetNamespaceRequest(fp1), p1...)
-	return proto.ToShardDistributorForceResetNamespaceResponse(response), proto.ToError(err)
+func (g sharddistributorClient) DrainShards(ctx context.Context, dp1 *types.DrainShardsRequest, p1 ...yarpc.CallOption) (dp2 *types.DrainShardsResponse, err error) {
+	response, err := g.c.DrainShards(ctx, proto.FromShardDistributorDrainShardsRequest(dp1), p1...)
+	return proto.ToShardDistributorDrainShardsResponse(response), proto.ToError(err)
+}
+
+func (g sharddistributorClient) GetDrainedShards(ctx context.Context, gp1 *types.GetDrainedShardsRequest, p1 ...yarpc.CallOption) (gp2 *types.GetDrainedShardsResponse, err error) {
+	response, err := g.c.GetDrainedShards(ctx, proto.FromShardDistributorGetDrainedShardsRequest(gp1), p1...)
+	return proto.ToShardDistributorGetDrainedShardsResponse(response), proto.ToError(err)
 }
 
 func (g sharddistributorClient) GetNamespaceState(ctx context.Context, gp1 *types.GetNamespaceStateRequest, p1 ...yarpc.CallOption) (gp2 *types.GetNamespaceStateResponse, err error) {
@@ -33,6 +38,11 @@ func (g sharddistributorClient) GetShardOwner(ctx context.Context, gp1 *types.Ge
 func (g sharddistributorClient) InspectShard(ctx context.Context, gp1 *types.GetShardOwnerRequest, p1 ...yarpc.CallOption) (gp2 *types.GetShardOwnerResponse, err error) {
 	response, err := g.c.InspectShard(ctx, proto.FromShardDistributorInspectShardRequest(gp1), p1...)
 	return proto.ToShardDistributorInspectShardResponse(response), proto.ToError(err)
+}
+
+func (g sharddistributorClient) UndrainShards(ctx context.Context, up1 *types.UndrainShardsRequest, p1 ...yarpc.CallOption) (up2 *types.UndrainShardsResponse, err error) {
+	response, err := g.c.UndrainShards(ctx, proto.FromShardDistributorUndrainShardsRequest(up1), p1...)
+	return proto.ToShardDistributorUndrainShardsResponse(response), proto.ToError(err)
 }
 
 func (g sharddistributorClient) WatchNamespaceState(ctx context.Context, wp1 *types.WatchNamespaceStateRequest, p1 ...yarpc.CallOption) (w1 sharddistributor.WatchNamespaceStateClient, err error) {
