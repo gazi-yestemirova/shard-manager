@@ -26,6 +26,11 @@ func (g GRPCHandler) DrainShards(ctx context.Context, request *sharddistributorv
 	return proto.FromShardDistributorDrainShardsResponse(response), proto.FromError(err)
 }
 
+func (g GRPCHandler) ForceResetNamespace(ctx context.Context, request *sharddistributorv1.ForceResetNamespaceRequest) (*sharddistributorv1.ForceResetNamespaceResponse, error) {
+	response, err := g.h.ForceResetNamespace(ctx, proto.ToShardDistributorForceResetNamespaceRequest(request))
+	return proto.FromShardDistributorForceResetNamespaceResponse(response), proto.FromError(err)
+}
+
 func (g GRPCHandler) GetDrainedShards(ctx context.Context, request *sharddistributorv1.GetDrainedShardsRequest) (*sharddistributorv1.GetDrainedShardsResponse, error) {
 	response, err := g.h.GetDrainedShards(ctx, proto.ToShardDistributorGetDrainedShardsRequest(request))
 	return proto.FromShardDistributorGetDrainedShardsResponse(response), proto.FromError(err)

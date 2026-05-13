@@ -57,6 +57,21 @@ func (mr *MockHandlerMockRecorder) DrainShards(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DrainShards", reflect.TypeOf((*MockHandler)(nil).DrainShards), arg0, arg1)
 }
 
+// ForceResetNamespace mocks base method.
+func (m *MockHandler) ForceResetNamespace(arg0 context.Context, arg1 *types.ForceResetNamespaceRequest) (*types.ForceResetNamespaceResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ForceResetNamespace", arg0, arg1)
+	ret0, _ := ret[0].(*types.ForceResetNamespaceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ForceResetNamespace indicates an expected call of ForceResetNamespace.
+func (mr *MockHandlerMockRecorder) ForceResetNamespace(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForceResetNamespace", reflect.TypeOf((*MockHandler)(nil).ForceResetNamespace), arg0, arg1)
+}
+
 // GetDrainedShards mocks base method.
 func (m *MockHandler) GetDrainedShards(arg0 context.Context, arg1 *types.GetDrainedShardsRequest) (*types.GetDrainedShardsResponse, error) {
 	m.ctrl.T.Helper()

@@ -20,6 +20,11 @@ func (g sharddistributorClient) DrainShards(ctx context.Context, dp1 *types.Drai
 	return proto.ToShardDistributorDrainShardsResponse(response), proto.ToError(err)
 }
 
+func (g sharddistributorClient) ForceResetNamespace(ctx context.Context, fp1 *types.ForceResetNamespaceRequest, p1 ...yarpc.CallOption) (fp2 *types.ForceResetNamespaceResponse, err error) {
+	response, err := g.c.ForceResetNamespace(ctx, proto.FromShardDistributorForceResetNamespaceRequest(fp1), p1...)
+	return proto.ToShardDistributorForceResetNamespaceResponse(response), proto.ToError(err)
+}
+
 func (g sharddistributorClient) GetDrainedShards(ctx context.Context, gp1 *types.GetDrainedShardsRequest, p1 ...yarpc.CallOption) (gp2 *types.GetDrainedShardsResponse, err error) {
 	response, err := g.c.GetDrainedShards(ctx, proto.FromShardDistributorGetDrainedShardsRequest(gp1), p1...)
 	return proto.ToShardDistributorGetDrainedShardsResponse(response), proto.ToError(err)

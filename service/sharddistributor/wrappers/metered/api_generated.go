@@ -47,6 +47,25 @@ func (h *metricsHandler) DrainShards(ctx context.Context, dp1 *types.DrainShards
 	return dp2, err
 }
 
+func (h *metricsHandler) ForceResetNamespace(ctx context.Context, fp1 *types.ForceResetNamespaceRequest) (fp2 *types.ForceResetNamespaceResponse, err error) {
+	defer func() { log.CapturePanic(recover(), h.logger, &err) }()
+
+	scope := h.metricsClient.Scope(metrics.ShardDistributorForceResetNamespaceScope)
+	scope = scope.Tagged(metrics.NamespaceTag(fp1.GetNamespace()))
+	scope.IncCounter(metrics.ShardDistributorRequests)
+	sw := scope.StartTimer(metrics.ShardDistributorLatency)
+	defer sw.Stop()
+	logger := h.logger.WithTags(tag.ShardNamespace(fp1.GetNamespace()))
+
+	fp2, err = h.handler.ForceResetNamespace(ctx, fp1)
+
+	if err != nil {
+		handleErr(err, scope, logger)
+	}
+
+	return fp2, err
+}
+
 func (h *metricsHandler) GetDrainedShards(ctx context.Context, gp1 *types.GetDrainedShardsRequest) (gp2 *types.GetDrainedShardsResponse, err error) {
 	defer func() { log.CapturePanic(recover(), h.logger, &err) }()
 
