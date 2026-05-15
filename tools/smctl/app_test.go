@@ -44,6 +44,7 @@ func TestBuildCommand_help_listsRootFlagsAndCommands(t *testing.T) {
 		"smctl",
 		"namespace",
 		"shard",
+		"executor",
 		"--" + FlagNamespace,
 		"--" + FlagAddress,
 		"--" + FlagTransport,
