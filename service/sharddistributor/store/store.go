@@ -103,4 +103,19 @@ type Store interface {
 	//
 	// Returns the number of keys removed by the underlying delete.
 	ResetNamespace(ctx context.Context, namespace string) (int64, error)
+
+	// DrainShards marks the given shards as drained for the namespace.
+	// The operation is idempotent: shards that are already drained remain drained.
+	// Returns the set of shard IDs that are drained for the namespace after the call
+	// completes (the union of previously-drained shards and the newly-drained input).
+	DrainShards(ctx context.Context, namespace string, shardIDs []string) ([]string, error)
+
+	// UndrainShards removes the given shards from the drained list for the namespace.
+	// The operation is idempotent: shards that aren't drained are silently ignored.
+	// Returns the subset of the input shard IDs that were actually removed.
+	UndrainShards(ctx context.Context, namespace string, shardIDs []string) ([]string, error)
+
+	// GetDrainedShards returns the list of shard IDs currently marked as
+	// drained for the namespace.
+	GetDrainedShards(ctx context.Context, namespace string) ([]string, error)
 }

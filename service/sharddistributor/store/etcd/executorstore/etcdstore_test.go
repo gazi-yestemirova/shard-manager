@@ -1159,6 +1159,60 @@ func TestResetNamespace(t *testing.T) {
 	})
 }
 
+// TestDrainUndrainShardsRoundtrip exercises the drain lifecycle through the
+// real etcd-backed store: drain marks shards, GetDrainedShards reads them back,
+// undrain removes only the requested subset, and GetState surfaces them in
+// NamespaceState.DrainedShards.
+func TestDrainUndrainShardsRoundtrip(t *testing.T) {
+	tc := testhelper.SetupStoreTestCluster(t)
+	executorStore := createStore(t, tc)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	drained, err := executorStore.GetDrainedShards(ctx, tc.Namespace)
+	require.NoError(t, err)
+	assert.Empty(t, drained)
+
+	all, err := executorStore.DrainShards(ctx, tc.Namespace, []string{"shard-A", "shard-B"})
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"shard-A", "shard-B"}, all)
+
+	all, err = executorStore.DrainShards(ctx, tc.Namespace, []string{"shard-A", "shard-C"})
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"shard-A", "shard-B", "shard-C"}, all)
+
+	state, err := executorStore.GetState(ctx, tc.Namespace)
+	require.NoError(t, err)
+	assert.Len(t, state.DrainedShards, 3)
+	for _, key := range []string{"shard-A", "shard-B", "shard-C"} {
+		_, ok := state.DrainedShards[key]
+		assert.Truef(t, ok, "expected %s in drained set", key)
+	}
+
+	removed, err := executorStore.UndrainShards(ctx, tc.Namespace, []string{"shard-A", "shard-NOPE"})
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"shard-A"}, removed)
+
+	drained, err = executorStore.GetDrainedShards(ctx, tc.Namespace)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"shard-B", "shard-C"}, drained)
+}
+
+func TestDrainShards_Empty(t *testing.T) {
+	tc := testhelper.SetupStoreTestCluster(t)
+	executorStore := createStore(t, tc)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	out, err := executorStore.DrainShards(ctx, tc.Namespace, nil)
+	require.NoError(t, err)
+	assert.Empty(t, out)
+
+	out, err = executorStore.UndrainShards(ctx, tc.Namespace, nil)
+	require.NoError(t, err)
+	assert.Empty(t, out)
+}
+
 func createStore(t *testing.T, tc *testhelper.StoreTestCluster) store.Store {
 	t.Helper()
 

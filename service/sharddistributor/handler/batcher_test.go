@@ -40,14 +40,14 @@ import (
 // processFnFromMap returns an ephemeralAssignmentBatchFn that resolves shard keys from a
 // fixed map, returning an empty map (and no error) for any key not present.
 func processFnFromMap(results map[string]*types.GetShardOwnerResponse) ephemeralAssignmentBatchFn {
-	return func(_ context.Context, _ string, shardKeys []string) (map[string]*types.GetShardOwnerResponse, error) {
+	return func(_ context.Context, _ string, shardKeys []string) (map[string]*types.GetShardOwnerResponse, map[string]error, error) {
 		out := make(map[string]*types.GetShardOwnerResponse, len(shardKeys))
 		for _, k := range shardKeys {
 			if v, ok := results[k]; ok {
 				out[k] = v
 			}
 		}
-		return out, nil
+		return out, nil, nil
 	}
 }
 
@@ -91,8 +91,8 @@ func TestShardBatcher_Submit(t *testing.T) {
 		},
 		{
 			name: "batch function returns error - propagated to caller",
-			batchFn: func(_ context.Context, _ string, _ []string) (map[string]*types.GetShardOwnerResponse, error) {
-				return nil, errors.New("storage unavailable")
+			batchFn: func(_ context.Context, _ string, _ []string) (map[string]*types.GetShardOwnerResponse, map[string]error, error) {
+				return nil, nil, errors.New("storage unavailable")
 			},
 			namespace:  "ns",
 			shardKey:   "shard-1",
@@ -101,8 +101,8 @@ func TestShardBatcher_Submit(t *testing.T) {
 		},
 		{
 			name: "key absent from batch result returns internal error",
-			batchFn: func(_ context.Context, _ string, _ []string) (map[string]*types.GetShardOwnerResponse, error) {
-				return map[string]*types.GetShardOwnerResponse{}, nil
+			batchFn: func(_ context.Context, _ string, _ []string) (map[string]*types.GetShardOwnerResponse, map[string]error, error) {
+				return map[string]*types.GetShardOwnerResponse{}, nil, nil
 			},
 			namespace:  "ns",
 			shardKey:   "shard-missing",
@@ -258,8 +258,8 @@ func TestShardBatcher_ErrorPropagatedToAllCallers(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			batchFn := func(_ context.Context, _ string, _ []string) (map[string]*types.GetShardOwnerResponse, error) {
-				return nil, tc.batchErr
+			batchFn := func(_ context.Context, _ string, _ []string) (map[string]*types.GetShardOwnerResponse, map[string]error, error) {
+				return nil, nil, tc.batchErr
 			}
 
 			ts := clock.NewMockedTimeSource()
@@ -316,7 +316,7 @@ func TestShardBatcher_ConcurrentRequestsBatchedTogether(t *testing.T) {
 			// when at least one flush call receives more than one shard key.
 			var mu sync.Mutex
 			maxBatchSize := 0
-			batchFn := func(_ context.Context, _ string, shardKeys []string) (map[string]*types.GetShardOwnerResponse, error) {
+			batchFn := func(_ context.Context, _ string, shardKeys []string) (map[string]*types.GetShardOwnerResponse, map[string]error, error) {
 				mu.Lock()
 				if len(shardKeys) > maxBatchSize {
 					maxBatchSize = len(shardKeys)
@@ -328,7 +328,7 @@ func TestShardBatcher_ConcurrentRequestsBatchedTogether(t *testing.T) {
 						out[k] = v
 					}
 				}
-				return out, nil
+				return out, nil, nil
 			}
 
 			ts := clock.NewMockedTimeSource()
@@ -378,9 +378,9 @@ func TestShardBatcher_StopDrainsAndCancelsRemainingRequests(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			block := make(chan struct{})
-			batchFn := func(_ context.Context, _ string, _ []string) (map[string]*types.GetShardOwnerResponse, error) {
+			batchFn := func(_ context.Context, _ string, _ []string) (map[string]*types.GetShardOwnerResponse, map[string]error, error) {
 				<-block
-				return nil, nil
+				return nil, nil, nil
 			}
 
 			ts := clock.NewMockedTimeSource()

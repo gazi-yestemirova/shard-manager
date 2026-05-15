@@ -311,11 +311,37 @@ func (s *executorStoreImpl) GetState(ctx context.Context, namespace string) (*st
 		}
 	}
 
+	drainedShards, err := s.loadDrainedShardSet(ctx, namespace)
+	if err != nil {
+		return nil, fmt.Errorf("get drained shards: %w", err)
+	}
+
 	return &store.NamespaceState{
 		Executors:        heartbeatStates,
 		ShardStats:       shardStats,
 		ShardAssignments: assignedStates,
+		DrainedShards:    drainedShards,
 	}, nil
+}
+
+// loadDrainedShardSet reads all drained-shard keys for the namespace and returns them as a set.
+func (s *executorStoreImpl) loadDrainedShardSet(ctx context.Context, namespace string) (map[string]struct{}, error) {
+	drainedPrefix := etcdkeys.BuildDrainedShardsPrefix(s.prefix, namespace)
+	resp, err := s.client.Get(ctx, drainedPrefix, clientv3.WithPrefix())
+	if err != nil {
+		return nil, err
+	}
+
+	drained := make(map[string]struct{}, len(resp.Kvs))
+	for _, kv := range resp.Kvs {
+		shardID, err := etcdkeys.ParseDrainedShardKey(s.prefix, namespace, string(kv.Key))
+		if err != nil {
+			s.logger.Warn("ignoring malformed drained shard key", tag.Key(string(kv.Key)), tag.Error(err))
+			continue
+		}
+		drained[shardID] = struct{}{}
+	}
+	return drained, nil
 }
 
 func (s *executorStoreImpl) SubscribeToAssignmentChanges(ctx context.Context, namespace string) (<-chan map[*store.ShardOwner][]string, func(), error) {
@@ -851,6 +877,77 @@ func (s *executorStoreImpl) ResetNamespace(ctx context.Context, namespace string
 
 func (s *executorStoreImpl) GetExecutor(ctx context.Context, namespace string, executorID string) (*store.ShardOwner, error) {
 	return s.shardCache.GetExecutor(ctx, namespace, executorID)
+}
+
+// DrainShards marks each provided shard ID as drained for the namespace by
+// writing one etcd key per shard. Idempotent: existing entries are overwritten
+// with the same empty value, leaving the drained set unchanged.
+func (s *executorStoreImpl) DrainShards(ctx context.Context, namespace string, shardIDs []string) ([]string, error) {
+	if len(shardIDs) > 0 {
+		ops := make([]clientv3.Op, 0, len(shardIDs))
+		for _, shardID := range shardIDs {
+			ops = append(ops, clientv3.OpPut(etcdkeys.BuildDrainedShardKey(s.prefix, namespace, shardID), ""))
+		}
+		if _, err := s.client.Txn(ctx).Then(ops...).Commit(); err != nil {
+			return nil, fmt.Errorf("drain shards: %w", err)
+		}
+	}
+
+	drained, err := s.loadDrainedShardSet(ctx, namespace)
+	if err != nil {
+		return nil, fmt.Errorf("read drained shards after drain: %w", err)
+	}
+	result := make([]string, 0, len(drained))
+	for shardID := range drained {
+		result = append(result, shardID)
+	}
+	return result, nil
+}
+
+// UndrainShards removes the given shard IDs from the drained list. The returned
+// slice contains the subset of input shard IDs that existed in the drained set
+// before the call (i.e. were actually removed).
+func (s *executorStoreImpl) UndrainShards(ctx context.Context, namespace string, shardIDs []string) ([]string, error) {
+	if len(shardIDs) == 0 {
+		return nil, nil
+	}
+
+	beforeSet, err := s.loadDrainedShardSet(ctx, namespace)
+	if err != nil {
+		return nil, fmt.Errorf("read drained shards before undrain: %w", err)
+	}
+
+	ops := make([]clientv3.Op, 0, len(shardIDs))
+	removed := make([]string, 0, len(shardIDs))
+	for _, shardID := range shardIDs {
+		if _, ok := beforeSet[shardID]; !ok {
+			continue
+		}
+		ops = append(ops, clientv3.OpDelete(etcdkeys.BuildDrainedShardKey(s.prefix, namespace, shardID)))
+		removed = append(removed, shardID)
+	}
+
+	if len(ops) == 0 {
+		return nil, nil
+	}
+
+	if _, err := s.client.Txn(ctx).Then(ops...).Commit(); err != nil {
+		return nil, fmt.Errorf("undrain shards: %w", err)
+	}
+	return removed, nil
+}
+
+// GetDrainedShards returns the list of drained shard IDs for the namespace.
+func (s *executorStoreImpl) GetDrainedShards(ctx context.Context, namespace string) ([]string, error) {
+	drained, err := s.loadDrainedShardSet(ctx, namespace)
+	if err != nil {
+		return nil, fmt.Errorf("get drained shards: %w", err)
+	}
+	result := make([]string, 0, len(drained))
+	for shardID := range drained {
+		result = append(result, shardID)
+	}
+	return result, nil
 }
 
 // prepareShardStatisticsUpdates calculates the necessary changes to shard statistics based on a new shard assignment plan.

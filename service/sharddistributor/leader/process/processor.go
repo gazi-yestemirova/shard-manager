@@ -324,6 +324,25 @@ func (p *namespaceProcessor) identifyStaleExecutors(namespaceState *store.Namesp
 	return expiredExecutors
 }
 
+// countAssignedDrainedShards returns the number of currently-assigned shards
+// that are in the namespace's drained set. These will be dropped on this
+// rebalance pass; we surface the count so distributionChanged correctly
+// triggers a write even when no other condition would.
+func (p *namespaceProcessor) countAssignedDrainedShards(namespaceState *store.NamespaceState) int {
+	if len(namespaceState.DrainedShards) == 0 {
+		return 0
+	}
+	count := 0
+	for _, assigned := range namespaceState.ShardAssignments {
+		for shardID := range assigned.AssignedShards {
+			if _, ok := namespaceState.DrainedShards[shardID]; ok {
+				count++
+			}
+		}
+	}
+	return count
+}
+
 // identifyStaleShardStats returns a list of shard statistics that are no longer relevant.
 func (p *namespaceProcessor) identifyStaleShardStats(namespaceState *store.NamespaceState) []string {
 	activeShards := make(map[string]struct{})
@@ -439,6 +458,11 @@ func (p *namespaceProcessor) rebalanceShardsImpl(ctx context.Context, metricsLoo
 	}
 	metricsLoopScope.AddCounter(metrics.ShardDistributorAssignLoopDeletedShards, int64(len(deletedShards)))
 
+	droppedDrained := p.countAssignedDrainedShards(namespaceState)
+	if droppedDrained > 0 {
+		p.logger.Info("Dropping drained shards from current assignments", tag.Counter(droppedDrained))
+	}
+
 	shardsToReassign, currentAssignments := p.findShardsToReassign(activeExecutors, namespaceState, deletedShards, staleExecutors)
 
 	metricsLoopScope.AddCounter(metrics.ShardDistributorAssignLoopNumRebalancedShards, int64(len(shardsToReassign)))
@@ -449,7 +473,7 @@ func (p *namespaceProcessor) rebalanceShardsImpl(ctx context.Context, metricsLoo
 	isRebalancedByShardLoad := p.rebalanceByShardLoad(calcShardLoad(namespaceState), currentAssignments, metricsLoopScope)
 	p.emitExecutorMetric(namespaceState, metricsLoopScope)
 
-	distributionChanged := len(deletedShards) > 0 || len(staleExecutors) > 0 || assignedToEmptyExecutors || updatedAssignments || isRebalancedByShardLoad
+	distributionChanged := len(deletedShards) > 0 || len(staleExecutors) > 0 || assignedToEmptyExecutors || updatedAssignments || isRebalancedByShardLoad || droppedDrained > 0
 	if !distributionChanged {
 		p.logger.Info("No changes to distribution detected. Skipping rebalance.")
 		return nil
@@ -542,6 +566,12 @@ func (p *namespaceProcessor) findShardsToReassign(
 ) ([]string, map[string][]string) {
 	allShards := make(map[string]struct{})
 	for _, shardID := range getShards(p.namespaceCfg, namespaceState, deletedShards) {
+		// Drained shards are excluded from the assignable set so that any
+		// executor currently owning one will drop it on this rebalance and
+		// no executor will be picked to take it.
+		if _, drained := namespaceState.DrainedShards[shardID]; drained {
+			continue
+		}
 		allShards[shardID] = struct{}{}
 	}
 

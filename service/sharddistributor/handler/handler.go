@@ -115,6 +115,20 @@ func (h *handlerImpl) GetShardOwner(ctx context.Context, request *types.GetShard
 		}
 	}
 
+	// Drained shards must not be served regardless of whether they currently
+	// have an owner recorded in storage. The rebalance loop will remove any
+	// stale assignment on its next pass.
+	drained, err := h.isShardDrained(ctx, request.Namespace, request.ShardKey)
+	if err != nil {
+		return nil, err
+	}
+	if drained {
+		return nil, &types.ShardDrainedError{
+			Namespace: request.Namespace,
+			ShardKey:  request.ShardKey,
+		}
+	}
+
 	shardOwner, err := h.storage.GetShardOwner(ctx, request.Namespace, request.ShardKey)
 	if errors.Is(err, store.ErrShardNotFound) {
 		if h.shardDistributionCfg.Namespaces[namespaceIdx].Type == config.NamespaceTypeEphemeral {
@@ -166,6 +180,21 @@ func (h *handlerImpl) InspectShard(ctx context.Context, request *types.GetShardO
 		Metadata:  shardOwner.Metadata,
 		Namespace: request.Namespace,
 	}, nil
+}
+
+// isShardDrained returns true if the shard is currently in the drained list for the namespace.
+// Errors from the storage layer are wrapped as InternalServiceError.
+func (h *handlerImpl) isShardDrained(ctx context.Context, namespace, shardKey string) (bool, error) {
+	drained, err := h.storage.GetDrainedShards(ctx, namespace)
+	if err != nil {
+		return false, &types.InternalServiceError{Message: fmt.Sprintf("failed to read drained shards: %v", err)}
+	}
+	for _, id := range drained {
+		if id == shardKey {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // getOrAssignEphemeralShard assigns an ephemeral shard that does not yet exist
@@ -367,15 +396,63 @@ func WrapShards(shardIDs []string) []*types.Shard {
 
 func (h *handlerImpl) DrainShards(ctx context.Context, request *types.DrainShardsRequest) (resp *types.DrainShardsResponse, retError error) {
 	defer func() { log.CapturePanic(recover(), h.logger, &retError) }()
-	return nil, &types.InternalServiceError{Message: "DrainShards is not yet implemented"}
+	h.startWG.Wait()
+
+	if request == nil || request.GetNamespace() == "" {
+		return nil, &types.BadRequestError{Message: "namespace is required"}
+	}
+	if !h.namespaceExists(request.GetNamespace()) {
+		return nil, &types.NamespaceNotFoundError{Namespace: request.GetNamespace()}
+	}
+
+	drained, err := h.storage.DrainShards(ctx, request.GetNamespace(), request.GetShardKeys())
+	if err != nil {
+		return nil, &types.InternalServiceError{Message: fmt.Sprintf("failed to drain shards: %v", err)}
+	}
+	return &types.DrainShardsResponse{DrainedShardKeys: drained}, nil
 }
 
 func (h *handlerImpl) UndrainShards(ctx context.Context, request *types.UndrainShardsRequest) (resp *types.UndrainShardsResponse, retError error) {
 	defer func() { log.CapturePanic(recover(), h.logger, &retError) }()
-	return nil, &types.InternalServiceError{Message: "UndrainShards is not yet implemented"}
+	h.startWG.Wait()
+
+	if request == nil || request.GetNamespace() == "" {
+		return nil, &types.BadRequestError{Message: "namespace is required"}
+	}
+	if !h.namespaceExists(request.GetNamespace()) {
+		return nil, &types.NamespaceNotFoundError{Namespace: request.GetNamespace()}
+	}
+
+	undrained, err := h.storage.UndrainShards(ctx, request.GetNamespace(), request.GetShardKeys())
+	if err != nil {
+		return nil, &types.InternalServiceError{Message: fmt.Sprintf("failed to undrain shards: %v", err)}
+	}
+	return &types.UndrainShardsResponse{UndrainedShardKeys: undrained}, nil
 }
 
 func (h *handlerImpl) GetDrainedShards(ctx context.Context, request *types.GetDrainedShardsRequest) (resp *types.GetDrainedShardsResponse, retError error) {
 	defer func() { log.CapturePanic(recover(), h.logger, &retError) }()
-	return nil, &types.InternalServiceError{Message: "GetDrainedShards is not yet implemented"}
+	h.startWG.Wait()
+
+	if request == nil || request.GetNamespace() == "" {
+		return nil, &types.BadRequestError{Message: "namespace is required"}
+	}
+	if !h.namespaceExists(request.GetNamespace()) {
+		return nil, &types.NamespaceNotFoundError{Namespace: request.GetNamespace()}
+	}
+
+	shards, err := h.storage.GetDrainedShards(ctx, request.GetNamespace())
+	if err != nil {
+		return nil, &types.InternalServiceError{Message: fmt.Sprintf("failed to get drained shards: %v", err)}
+	}
+	return &types.GetDrainedShardsResponse{
+		Namespace: request.GetNamespace(),
+		ShardKeys: shards,
+	}, nil
+}
+
+func (h *handlerImpl) namespaceExists(namespace string) bool {
+	return slices.IndexFunc(h.shardDistributionCfg.Namespaces, func(ns config.Namespace) bool {
+		return ns.Name == namespace
+	}) != -1
 }

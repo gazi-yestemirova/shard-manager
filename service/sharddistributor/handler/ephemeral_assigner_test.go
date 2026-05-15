@@ -142,7 +142,7 @@ func TestAssignEphemeralBatch(t *testing.T) {
 
 			tt.setupMocks(mockStorage)
 
-			results, err := h.assignEphemeralBatch(context.Background(), _testNamespaceEphemeral, tt.shardKeys)
+			results, _, err := h.assignEphemeralBatch(context.Background(), _testNamespaceEphemeral, tt.shardKeys)
 			if tt.expectedError {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), tt.expectedErrMsg)
@@ -158,6 +158,81 @@ func TestAssignEphemeralBatch(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Drained shards in a batch must be filtered out from balancer input and
+// surfaced as per-shard ShardDrainedError in the second return value.
+// Non-drained shards are still assigned in the same batch.
+func TestAssignEphemeralBatch_DrainedShardsFilteredAndReportedPerShard(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockStorage := store.NewMockStore(ctrl)
+	h := &handlerImpl{
+		logger:  testlogger.New(t),
+		storage: mockStorage,
+		cfg:     newTestShardDistributorConfig(config.LoadBalancingModeNAIVE),
+	}
+
+	mockStorage.EXPECT().GetState(gomock.Any(), _testNamespaceEphemeral).Return(&store.NamespaceState{
+		Executors: map[string]store.HeartbeatState{
+			"owner1": {Status: types.ExecutorStatusACTIVE},
+		},
+		ShardAssignments: map[string]store.AssignedState{
+			"owner1": {AssignedShards: map[string]*types.ShardAssignment{}},
+		},
+		DrainedShards: map[string]struct{}{"DRAINED-A": {}, "DRAINED-B": {}},
+	}, nil)
+	mockStorage.EXPECT().AssignShards(gomock.Any(), _testNamespaceEphemeral, gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, _ string, request store.AssignShardsRequest, _ store.GuardFunc) error {
+			assigned := request.NewState.ShardAssignments["owner1"].AssignedShards
+			require.Contains(t, assigned, "OK-1")
+			require.NotContains(t, assigned, "DRAINED-A")
+			require.NotContains(t, assigned, "DRAINED-B")
+			return nil
+		},
+	)
+	mockStorage.EXPECT().GetExecutor(gomock.Any(), _testNamespaceEphemeral, "owner1").Return(&store.ShardOwner{
+		ExecutorID: "owner1",
+		Metadata:   map[string]string{"ip": "127.0.0.1"},
+	}, nil)
+
+	results, perShardErrors, err := h.assignEphemeralBatch(context.Background(), _testNamespaceEphemeral, []string{"OK-1", "DRAINED-A", "DRAINED-B"})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Equal(t, "owner1", results["OK-1"].Owner)
+	require.Len(t, perShardErrors, 2)
+	for _, key := range []string{"DRAINED-A", "DRAINED-B"} {
+		var drainedErr *types.ShardDrainedError
+		require.ErrorAsf(t, perShardErrors[key], &drainedErr, "expected ShardDrainedError for %s", key)
+		require.Equal(t, key, drainedErr.ShardKey)
+		require.Equal(t, _testNamespaceEphemeral, drainedErr.Namespace)
+	}
+}
+
+// All shards in a batch are drained: nothing to assign, so the assigner must
+// not call AssignShards/GetExecutor on the storage layer.
+func TestAssignEphemeralBatch_AllDrainedSkipsAssignment(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockStorage := store.NewMockStore(ctrl)
+	h := &handlerImpl{
+		logger:  testlogger.New(t),
+		storage: mockStorage,
+		cfg:     newTestShardDistributorConfig(config.LoadBalancingModeNAIVE),
+	}
+
+	mockStorage.EXPECT().GetState(gomock.Any(), _testNamespaceEphemeral).Return(&store.NamespaceState{
+		Executors:        map[string]store.HeartbeatState{"owner1": {Status: types.ExecutorStatusACTIVE}},
+		ShardAssignments: map[string]store.AssignedState{"owner1": {AssignedShards: map[string]*types.ShardAssignment{}}},
+		DrainedShards:    map[string]struct{}{"D-1": {}, "D-2": {}},
+	}, nil)
+
+	results, perShardErrors, err := h.assignEphemeralBatch(context.Background(), _testNamespaceEphemeral, []string{"D-1", "D-2"})
+	require.NoError(t, err)
+	require.Empty(t, results)
+	require.Len(t, perShardErrors, 2)
 }
 
 // An unsupported load balancing mode bubbles up from loadbalance.New as an
@@ -178,7 +253,7 @@ func TestAssignEphemeralBatch_InvalidLoadBalancingMode(t *testing.T) {
 		ShardAssignments: map[string]store.AssignedState{"owner1": {AssignedShards: map[string]*types.ShardAssignment{}}},
 	}, nil)
 
-	results, err := h.assignEphemeralBatch(context.Background(), _testNamespaceEphemeral, []string{"new-shard-1"})
+	results, _, err := h.assignEphemeralBatch(context.Background(), _testNamespaceEphemeral, []string{"new-shard-1"})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unsupported load balancing mode")
 	require.Nil(t, results)
