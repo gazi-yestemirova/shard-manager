@@ -57,7 +57,7 @@ type NamespaceState struct {
 
 	// DrainedShards holds the set of shard IDs that are drained for this
 	// namespace. Drained shards are not eligible for assignment until they
-	// are explicitly undrained. Used as a set; values are empty structs.
+	// are explicitly undrained.
 	// Key: ShardID
 	DrainedShards map[string]struct{}
 }

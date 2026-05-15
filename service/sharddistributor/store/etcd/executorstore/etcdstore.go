@@ -336,7 +336,7 @@ func (s *executorStoreImpl) loadDrainedShardSet(ctx context.Context, namespace s
 	for _, kv := range resp.Kvs {
 		shardID, err := etcdkeys.ParseDrainedShardKey(s.prefix, namespace, string(kv.Key))
 		if err != nil {
-			s.logger.Warn("ignoring malformed drained shard key", tag.Key(string(kv.Key)), tag.Error(err))
+			s.logger.Warn("skipping corrupted shard key", tag.Key(string(kv.Key)), tag.Error(err))
 			continue
 		}
 		drained[shardID] = struct{}{}
@@ -880,8 +880,7 @@ func (s *executorStoreImpl) GetExecutor(ctx context.Context, namespace string, e
 }
 
 // DrainShards marks each provided shard ID as drained for the namespace by
-// writing one etcd key per shard. Idempotent: existing entries are overwritten
-// with the same empty value, leaving the drained set unchanged.
+// writing one etcd key per shard.
 func (s *executorStoreImpl) DrainShards(ctx context.Context, namespace string, shardIDs []string) ([]string, error) {
 	if len(shardIDs) > 0 {
 		ops := make([]clientv3.Op, 0, len(shardIDs))
@@ -906,7 +905,7 @@ func (s *executorStoreImpl) DrainShards(ctx context.Context, namespace string, s
 
 // UndrainShards removes the given shard IDs from the drained list. The returned
 // slice contains the subset of input shard IDs that existed in the drained set
-// before the call (i.e. were actually removed).
+// before the call
 func (s *executorStoreImpl) UndrainShards(ctx context.Context, namespace string, shardIDs []string) ([]string, error) {
 	if len(shardIDs) == 0 {
 		return nil, nil

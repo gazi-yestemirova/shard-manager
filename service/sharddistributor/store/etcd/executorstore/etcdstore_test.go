@@ -1159,9 +1159,9 @@ func TestResetNamespace(t *testing.T) {
 	})
 }
 
-// TestDrainUndrainShardsRoundtrip exercises the drain lifecycle through the
-// real etcd-backed store: drain marks shards, GetDrainedShards reads them back,
-// undrain removes only the requested subset, and GetState surfaces them in
+// TestDrainUndrainShardsRoundtrip tests the drain lifecycle through the
+// etcd-backed store: shards are marked drained, GetDrainedShards reads them,
+// undrain removes only the requested subset, and GetState returns shards in
 // NamespaceState.DrainedShards.
 func TestDrainUndrainShardsRoundtrip(t *testing.T) {
 	tc := testhelper.SetupStoreTestCluster(t)

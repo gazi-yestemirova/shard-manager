@@ -263,10 +263,6 @@ func TestGetShardOwner(t *testing.T) {
 
 			handler := newTestHandler(t, cfg, mockStorage)
 
-			// GetShardOwner consults the drained list on every call. The
-			// individual test cases below are not exercising drain behaviour
-			// so we default it to an empty list for whatever namespace they
-			// hit.
 			mockStorage.EXPECT().GetDrainedShards(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 
 			if tt.setupMocks != nil {
@@ -909,4 +905,3 @@ func TestListNamespaces(t *testing.T) {
 		})
 	}
 }
-
