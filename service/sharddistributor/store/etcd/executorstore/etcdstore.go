@@ -754,6 +754,38 @@ func (s *executorStoreImpl) commitGuardedOps(ctx context.Context, ops []clientv3
 	return nil
 }
 
+// commitOpsInBatches commits the given ops in unguarded chunks sized by
+// MaxEtcdTxnOps and returns the per-batch txn responses in order so callers
+// can inspect per-op outcomes.
+// Chunks are independent transactions: if a later chunk fails, earlier chunks
+// remain committed, so this is only safe for idempotent ops
+func (s *executorStoreImpl) commitOpsInBatches(ctx context.Context, ops []clientv3.Op) ([]*clientv3.TxnResponse, error) {
+	if len(ops) == 0 {
+		return nil, nil
+	}
+	maxOpsPerTxn := s.cfg.MaxEtcdTxnOps()
+	if maxOpsPerTxn < 1 {
+		maxOpsPerTxn = 1
+	}
+
+	numBatches := (len(ops) + maxOpsPerTxn - 1) / maxOpsPerTxn
+	batchSize := (len(ops) + numBatches - 1) / numBatches
+	responses := make([]*clientv3.TxnResponse, 0, numBatches)
+
+	for i := 0; i < len(ops); i += batchSize {
+		end := i + batchSize
+		if end > len(ops) {
+			end = len(ops)
+		}
+		resp, err := s.client.Txn(ctx).Then(ops[i:end]...).Commit()
+		if err != nil {
+			return nil, fmt.Errorf("commit batch: %w", err)
+		}
+		responses = append(responses, resp)
+	}
+	return responses, nil
+}
+
 // DeleteExecutors deletes the given executors from the store. It does not delete the shards owned by the executors, this
 // should be handled by the namespace processor loop as we want to reassign, not delete the shards.
 func (s *executorStoreImpl) DeleteExecutors(ctx context.Context, namespace string, executorIDs []string, guard store.GuardFunc) error {
@@ -893,14 +925,15 @@ func (s *executorStoreImpl) GetExecutor(ctx context.Context, namespace string, e
 }
 
 // DrainShards marks each provided shard ID as drained for the namespace by
-// writing one etcd key per shard.
+// writing one etcd key per shard. Operations are chunked to respect etcd's
+// per-transaction op limit.
 func (s *executorStoreImpl) DrainShards(ctx context.Context, namespace string, shardIDs []string) ([]string, error) {
 	if len(shardIDs) > 0 {
 		ops := make([]clientv3.Op, 0, len(shardIDs))
 		for _, shardID := range shardIDs {
 			ops = append(ops, clientv3.OpPut(etcdkeys.BuildDrainedShardKey(s.prefix, namespace, shardID), ""))
 		}
-		if _, err := s.client.Txn(ctx).Then(ops...).Commit(); err != nil {
+		if _, err := s.commitOpsInBatches(ctx, ops); err != nil {
 			return nil, fmt.Errorf("drain shards: %w", err)
 		}
 	}
@@ -916,35 +949,40 @@ func (s *executorStoreImpl) DrainShards(ctx context.Context, namespace string, s
 	return result, nil
 }
 
-// UndrainShards removes the given shard IDs from the drained list. The returned
-// slice contains the subset of input shard IDs that existed in the drained set
-// before the call
+// UndrainShards removes the given shard IDs from the drained list and returns
+// the subset that this call actually removed. We OpDelete every input key
+// blindly (no read-before-write) and inspect each per-op DeleteRange response:
+// Deleted == 1 means this call performed the removal, Deleted == 0 means the
+// key was already absent (either never drained or already removed by a
+// concurrent caller). This avoids the TOCTOU race between a pre-read and the
+// delete txn. Operations are chunked to respect etcd's per-transaction op
+// limit; chunks are independent, so partial progress is possible if a later
+// chunk fails — callers retry the same input safely (idempotent).
 func (s *executorStoreImpl) UndrainShards(ctx context.Context, namespace string, shardIDs []string) ([]string, error) {
 	if len(shardIDs) == 0 {
 		return nil, nil
 	}
 
-	beforeSet, err := s.loadDrainedShardSet(ctx, namespace)
-	if err != nil {
-		return nil, fmt.Errorf("read drained shards before undrain: %w", err)
-	}
-
 	ops := make([]clientv3.Op, 0, len(shardIDs))
-	removed := make([]string, 0, len(shardIDs))
 	for _, shardID := range shardIDs {
-		if _, ok := beforeSet[shardID]; !ok {
-			continue
-		}
 		ops = append(ops, clientv3.OpDelete(etcdkeys.BuildDrainedShardKey(s.prefix, namespace, shardID)))
-		removed = append(removed, shardID)
 	}
 
-	if len(ops) == 0 {
-		return nil, nil
-	}
-
-	if _, err := s.client.Txn(ctx).Then(ops...).Commit(); err != nil {
+	responses, err := s.commitOpsInBatches(ctx, ops)
+	if err != nil {
 		return nil, fmt.Errorf("undrain shards: %w", err)
+	}
+
+	removed := make([]string, 0, len(shardIDs))
+	idx := 0
+	for _, resp := range responses {
+		for _, opResp := range resp.Responses {
+			del := opResp.GetResponseDeleteRange()
+			if del != nil && del.Deleted > 0 {
+				removed = append(removed, shardIDs[idx])
+			}
+			idx++
+		}
 	}
 	return removed, nil
 }
@@ -960,6 +998,16 @@ func (s *executorStoreImpl) GetDrainedShards(ctx context.Context, namespace stri
 		result = append(result, shardID)
 	}
 	return result, nil
+}
+
+// GetDrainedShard performs a single-key Get on the drained-shard key. Sits on
+// the GetShardOwner hot path so it must not do a prefix scan.
+func (s *executorStoreImpl) GetDrainedShard(ctx context.Context, namespace, shardID string) (bool, error) {
+	resp, err := s.client.Get(ctx, etcdkeys.BuildDrainedShardKey(s.prefix, namespace, shardID), clientv3.WithCountOnly())
+	if err != nil {
+		return false, fmt.Errorf("get drained shard: %w", err)
+	}
+	return resp.Count > 0, nil
 }
 
 // prepareShardStatisticsUpdates calculates the necessary changes to shard statistics based on a new shard assignment plan.

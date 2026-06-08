@@ -264,7 +264,7 @@ func TestGetShardOwner(t *testing.T) {
 
 			handler := newTestHandler(t, cfg, mockStorage)
 
-			mockStorage.EXPECT().GetDrainedShards(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+			mockStorage.EXPECT().GetDrainedShard(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
 
 			if tt.setupMocks != nil {
 				tt.setupMocks(mockStorage)
@@ -632,7 +632,7 @@ func TestGetShardOwner_DrainedShard(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockStorage := store.NewMockStore(ctrl)
 
-			mockStorage.EXPECT().GetDrainedShards(gomock.Any(), tc.namespace).Return([]string{"shard-7"}, nil)
+			mockStorage.EXPECT().GetDrainedShard(gomock.Any(), tc.namespace, "shard-7").Return(true, nil)
 
 			h := newTestHandler(t, cfg, mockStorage)
 			resp, err := h.GetShardOwner(context.Background(), &types.GetShardOwnerRequest{

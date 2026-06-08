@@ -71,7 +71,7 @@ func (h *handlerImpl) assignEphemeralBatch(ctx context.Context, namespace string
 		return nil, perShardErrors, nil
 	}
 
-	placements, err := loadbalancer.PlanInitialPlacement(h.cfg, namespace, state, shardKeys)
+	placements, err := loadbalancer.PlanInitialPlacement(h.cfg, namespace, state, assignableShards)
 	if err != nil {
 		return nil, nil, &types.InternalServiceError{Message: fmt.Sprintf("plan initial placement: %v", err)}
 	}
@@ -92,7 +92,7 @@ func (h *handlerImpl) assignEphemeralBatch(ctx context.Context, namespace string
 		return nil, nil, err
 	}
 
-	return buildResults(namespace, shardKeys, placements, executorOwners), perShardErrors, nil
+	return buildResults(namespace, assignableShards, placements, executorOwners), perShardErrors, nil
 }
 
 // mergePlacements folds the planned shard→executor placements back into state.

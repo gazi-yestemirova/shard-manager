@@ -1169,9 +1169,9 @@ func TestResetNamespace(t *testing.T) {
 }
 
 // TestDrainUndrainShardsRoundtrip tests the drain lifecycle through the
-// etcd-backed store: shards are marked drained, GetDrainedShards reads them,
-// undrain removes only the requested subset, and GetState returns shards in
-// NamespaceState.DrainedShards.
+// etcd-backed store: shards are marked drained, GetDrainedShards / GetDrainedShard
+// read them back, undrain removes only the keys that were actually present, and
+// GetState returns shards in NamespaceState.DrainedShards.
 func TestDrainUndrainShardsRoundtrip(t *testing.T) {
 	tc := testhelper.SetupStoreTestCluster(t)
 	executorStore := createStore(t, tc)
@@ -1182,9 +1182,23 @@ func TestDrainUndrainShardsRoundtrip(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, drained)
 
+	// Point read on an absent shard returns false without error.
+	got, err := executorStore.GetDrainedShard(ctx, tc.Namespace, "shard-A")
+	require.NoError(t, err)
+	assert.False(t, got)
+
 	all, err := executorStore.DrainShards(ctx, tc.Namespace, []string{"shard-A", "shard-B"})
 	require.NoError(t, err)
 	assert.ElementsMatch(t, []string{"shard-A", "shard-B"}, all)
+
+	// Point read after drain returns true for the drained shard, false for an
+	// unrelated one. This is the hot-path lookup used by isShardDrained.
+	got, err = executorStore.GetDrainedShard(ctx, tc.Namespace, "shard-A")
+	require.NoError(t, err)
+	assert.True(t, got)
+	got, err = executorStore.GetDrainedShard(ctx, tc.Namespace, "shard-NOPE")
+	require.NoError(t, err)
+	assert.False(t, got)
 
 	all, err = executorStore.DrainShards(ctx, tc.Namespace, []string{"shard-A", "shard-C"})
 	require.NoError(t, err)
@@ -1198,13 +1212,50 @@ func TestDrainUndrainShardsRoundtrip(t *testing.T) {
 		assert.Truef(t, ok, "expected %s in drained set", key)
 	}
 
+	// First undrain reports only the keys that were actually drained at the
+	// moment the delete fired (shard-NOPE was never drained, so it is excluded).
 	removed, err := executorStore.UndrainShards(ctx, tc.Namespace, []string{"shard-A", "shard-NOPE"})
 	require.NoError(t, err)
 	assert.ElementsMatch(t, []string{"shard-A"}, removed)
 
+	// A second undrain of the same input observes an already-removed key and
+	// reports an empty result — this is the TOCTOU-safe semantic. We rely on
+	// the per-op Deleted count from the txn response rather than a pre-read.
+	removed, err = executorStore.UndrainShards(ctx, tc.Namespace, []string{"shard-A", "shard-NOPE"})
+	require.NoError(t, err)
+	assert.Empty(t, removed)
+
 	drained, err = executorStore.GetDrainedShards(ctx, tc.Namespace)
 	require.NoError(t, err)
 	assert.ElementsMatch(t, []string{"shard-B", "shard-C"}, drained)
+}
+
+// TestDrainShards_ChunksOverTxnLimit drains and undrains more shards than the
+// configured MaxEtcdTxnOps (128). The store must transparently chunk the txns
+// rather than fail with "etcdserver: too many operations in txn request".
+func TestDrainShards_ChunksOverTxnLimit(t *testing.T) {
+	tc := testhelper.SetupStoreTestCluster(t)
+	executorStore := createStore(t, tc)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	const numShards = 300 // > 2 * MaxEtcdTxnOps
+	shardIDs := make([]string, 0, numShards)
+	for i := 0; i < numShards; i++ {
+		shardIDs = append(shardIDs, fmt.Sprintf("bulk-shard-%04d", i))
+	}
+
+	all, err := executorStore.DrainShards(ctx, tc.Namespace, shardIDs)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, shardIDs, all)
+
+	removed, err := executorStore.UndrainShards(ctx, tc.Namespace, shardIDs)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, shardIDs, removed)
+
+	drained, err := executorStore.GetDrainedShards(ctx, tc.Namespace)
+	require.NoError(t, err)
+	assert.Empty(t, drained)
 }
 
 func TestDrainShards_Empty(t *testing.T) {

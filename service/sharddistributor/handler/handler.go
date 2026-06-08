@@ -185,18 +185,14 @@ func (h *handlerImpl) InspectShard(ctx context.Context, request *types.GetShardO
 }
 
 // isShardDrained returns true if the shard is currently in the drained list for the namespace.
-// Errors from the storage layer are wrapped as InternalServiceError.
+// Errors from the storage layer are wrapped as InternalServiceError. This is called from
+// the GetShardOwner hot path so it relies on a single-key point read instead of a prefix scan.
 func (h *handlerImpl) isShardDrained(ctx context.Context, namespace, shardKey string) (bool, error) {
-	drained, err := h.storage.GetDrainedShards(ctx, namespace)
+	drained, err := h.storage.GetDrainedShard(ctx, namespace, shardKey)
 	if err != nil {
-		return false, &types.InternalServiceError{Message: fmt.Sprintf("failed to read drained shards: %v", err)}
+		return false, &types.InternalServiceError{Message: fmt.Sprintf("failed to read drained shard: %v", err)}
 	}
-	for _, id := range drained {
-		if id == shardKey {
-			return true, nil
-		}
-	}
-	return false, nil
+	return drained, nil
 }
 
 // getOrAssignEphemeralShard assigns an ephemeral shard that does not yet exist

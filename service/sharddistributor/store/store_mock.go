@@ -149,6 +149,21 @@ func (mr *MockStoreMockRecorder) DrainShards(ctx, namespace, shardIDs any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DrainShards", reflect.TypeOf((*MockStore)(nil).DrainShards), ctx, namespace, shardIDs)
 }
 
+// GetDrainedShard mocks base method.
+func (m *MockStore) GetDrainedShard(ctx context.Context, namespace, shardID string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDrainedShard", ctx, namespace, shardID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDrainedShard indicates an expected call of GetDrainedShard.
+func (mr *MockStoreMockRecorder) GetDrainedShard(ctx, namespace, shardID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDrainedShard", reflect.TypeOf((*MockStore)(nil).GetDrainedShard), ctx, namespace, shardID)
+}
+
 // GetDrainedShards mocks base method.
 func (m *MockStore) GetDrainedShards(ctx context.Context, namespace string) ([]string, error) {
 	m.ctrl.T.Helper()

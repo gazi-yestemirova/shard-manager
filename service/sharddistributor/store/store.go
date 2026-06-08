@@ -112,10 +112,13 @@ type Store interface {
 
 	// UndrainShards removes the given shards from the drained list for the namespace.
 	// The operation is idempotent: shards that aren't drained are silently ignored.
-	// Returns the subset of the input shard IDs that were actually removed.
+	// Returns the subset of the input shard IDs that this call actually removed.
 	UndrainShards(ctx context.Context, namespace string, shardIDs []string) ([]string, error)
 
 	// GetDrainedShards returns the list of shard IDs currently marked as
 	// drained for the namespace.
 	GetDrainedShards(ctx context.Context, namespace string) ([]string, error)
+
+	// GetDrainedShard reports whether a single shard is currently drained.
+	GetDrainedShard(ctx context.Context, namespace string, shardID string) (bool, error)
 }

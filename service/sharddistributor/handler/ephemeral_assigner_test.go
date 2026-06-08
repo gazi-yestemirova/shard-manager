@@ -169,9 +169,10 @@ func TestAssignEphemeralBatch_DrainedShardsFilteredAndReportedPerShard(t *testin
 
 	mockStorage := store.NewMockStore(ctrl)
 	h := &handlerImpl{
-		logger:  testlogger.New(t),
-		storage: mockStorage,
-		cfg:     newTestShardDistributorConfig(config.LoadBalancingModeNAIVE),
+		logger:     testlogger.New(t),
+		storage:    mockStorage,
+		cfg:        newTestShardDistributorConfig(config.LoadBalancingModeNAIVE),
+		timeSource: clock.NewRealTimeSource(),
 	}
 
 	mockStorage.EXPECT().GetState(gomock.Any(), _testNamespaceEphemeral).Return(&store.NamespaceState{
@@ -218,9 +219,10 @@ func TestAssignEphemeralBatch_AllDrainedSkipsAssignment(t *testing.T) {
 
 	mockStorage := store.NewMockStore(ctrl)
 	h := &handlerImpl{
-		logger:  testlogger.New(t),
-		storage: mockStorage,
-		cfg:     newTestShardDistributorConfig(config.LoadBalancingModeNAIVE),
+		logger:     testlogger.New(t),
+		storage:    mockStorage,
+		cfg:        newTestShardDistributorConfig(config.LoadBalancingModeNAIVE),
+		timeSource: clock.NewRealTimeSource(),
 	}
 
 	mockStorage.EXPECT().GetState(gomock.Any(), _testNamespaceEphemeral).Return(&store.NamespaceState{
