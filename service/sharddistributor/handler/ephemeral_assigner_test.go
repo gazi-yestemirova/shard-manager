@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/cadence-workflow/shard-manager/common/clock"
 	"github.com/cadence-workflow/shard-manager/common/log/testlogger"
 	"github.com/cadence-workflow/shard-manager/common/types"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/config"
@@ -37,7 +38,7 @@ import (
 )
 
 // Per-balancer placement logic (naive count, greedy smoothed-load, tiebreaks,
-// draining/no-active handling) is covered in the loadbalance package tests.
+// draining/no-active handling) is covered in the loadbalancer package tests.
 // These tests cover only handler-level concerns: storage orchestration, error
 // wrapping, and the happy-path response shape.
 func TestAssignEphemeralBatch(t *testing.T) {
@@ -115,8 +116,6 @@ func TestAssignEphemeralBatch(t *testing.T) {
 			expectedErrMsg: "assign shards failure",
 		},
 		{
-			// The balancer's ErrNoActiveExecutors sentinel is translated to an
-			// InternalServiceError with a namespace-specific message in the handler.
 			name:      "NoActiveExecutors",
 			shardKeys: []string{"NON-EXISTING-SHARD"},
 			setupMocks: func(mockStore *store.MockStore) {
@@ -125,7 +124,7 @@ func TestAssignEphemeralBatch(t *testing.T) {
 				}, nil)
 			},
 			expectedError:  true,
-			expectedErrMsg: "no active executors available for namespace",
+			expectedErrMsg: "plan initial placement: no active executors available",
 		},
 	}
 
@@ -135,9 +134,10 @@ func TestAssignEphemeralBatch(t *testing.T) {
 			mockStorage := store.NewMockStore(ctrl)
 
 			h := &handlerImpl{
-				logger:  testlogger.New(t),
-				storage: mockStorage,
-				cfg:     newTestShardDistributorConfig(config.LoadBalancingModeNAIVE),
+				logger:     testlogger.New(t),
+				storage:    mockStorage,
+				cfg:        newTestShardDistributorConfig(config.LoadBalancingModeNAIVE),
+				timeSource: clock.NewRealTimeSource(),
 			}
 
 			tt.setupMocks(mockStorage)
@@ -235,7 +235,7 @@ func TestAssignEphemeralBatch_AllDrainedSkipsAssignment(t *testing.T) {
 	require.Len(t, perShardErrors, 2)
 }
 
-// An unsupported load balancing mode bubbles up from loadbalance.New as an
+// An unsupported load balancing mode bubbles up from the loadbalancer planner as an
 // InternalServiceError; the handler wraps it rather than panicking.
 func TestAssignEphemeralBatch_InvalidLoadBalancingMode(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -243,9 +243,10 @@ func TestAssignEphemeralBatch_InvalidLoadBalancingMode(t *testing.T) {
 
 	mockStorage := store.NewMockStore(ctrl)
 	h := &handlerImpl{
-		logger:  testlogger.New(t),
-		storage: mockStorage,
-		cfg:     newTestShardDistributorConfig("not-a-valid-mode"),
+		logger:     testlogger.New(t),
+		storage:    mockStorage,
+		cfg:        newTestShardDistributorConfig("not-a-valid-mode"),
+		timeSource: clock.NewRealTimeSource(),
 	}
 
 	mockStorage.EXPECT().GetState(gomock.Any(), _testNamespaceEphemeral).Return(&store.NamespaceState{
