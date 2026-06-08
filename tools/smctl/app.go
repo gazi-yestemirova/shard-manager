@@ -26,6 +26,7 @@ func BuildCommandWithFactory(cf ClientFactory) *cliv3.Command {
 		Commands: []*cliv3.Command{
 			namespaceCommand(cf),
 			shardCommand(cf),
+			executorCommand(cf),
 		},
 		// After is invoked even when the action returns an error, so it is the
 		// right place to release the dispatcher built on first command use.
