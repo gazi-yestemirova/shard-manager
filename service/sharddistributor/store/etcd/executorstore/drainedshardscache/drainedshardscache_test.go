@@ -113,6 +113,46 @@ func TestCache_ContainsReadyAfterFirstSnapshot(t *testing.T) {
 	waitForContains(t, c, tc.Namespace, "missing", false)
 }
 
+// Snapshot is the GetState fast path: ready flips after the first watch
+// snapshot, returns a defensive copy that tracks live drain/undrain events.
+func TestCache_SnapshotReturnsCurrentSet(t *testing.T) {
+	tc := testhelper.SetupStoreTestCluster(t)
+	putDrainedKey(t, tc, "shard-snap-1")
+
+	c := newCache(t, tc)
+
+	deadline := time.Now().Add(2 * time.Second)
+	var (
+		set   map[string]struct{}
+		ready bool
+	)
+	for time.Now().Before(deadline) {
+		set, ready = c.Snapshot(tc.Namespace)
+		if ready {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	require.True(t, ready, "cache did not become ready in time")
+	assert.Equal(t, map[string]struct{}{"shard-snap-1": {}}, set)
+
+	// Mutations on the returned map must not leak back into the cache.
+	set["mutation-should-be-isolated"] = struct{}{}
+
+	putDrainedKey(t, tc, "shard-snap-2")
+	want := map[string]struct{}{"shard-snap-1": {}, "shard-snap-2": {}}
+	deadline = time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		got, _ := c.Snapshot(tc.Namespace)
+		if assert.ObjectsAreEqual(want, got) {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	got, _ := c.Snapshot(tc.Namespace)
+	t.Fatalf("Snapshot did not converge: want=%v got=%v", want, got)
+}
+
 // TestCache_MultipleSubscribersShareWatch verifies the pubsub fan-out:
 // multiple subscribers see the same updates from a single underlying etcd
 // watch.
@@ -249,31 +289,25 @@ func TestCache_SubscribeUnknownNamespaceWaitsForInitialSnapshot(t *testing.T) {
 	assert.Empty(t, got)
 }
 
-// TestSubscribeContextCancellationBeforeFirstSnapshot ensures we don't leak the
-// initial-snapshot goroutine when the caller's context is already done.
-func TestSubscribeContextCancellationBeforeFirstSnapshot(t *testing.T) {
+// Initial snapshot is seeded synchronously, so a cancelled ctx no longer
+// suppresses or races with delivery; subsequent updates still flow.
+func TestSubscribeWithCancelledContextStillDeliversInitialSnapshot(t *testing.T) {
 	tc := testhelper.SetupStoreTestCluster(t)
+	putDrainedKey(t, tc, "shard-pre-existing")
+
 	c := newCache(t, tc)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // already cancelled.
+	cancel()
 
 	ch, unsub, err := c.Subscribe(ctx, tc.Namespace)
 	require.NoError(t, err)
 	defer unsub()
 
-	// The initial-snapshot goroutine sees the cancelled context and exits
-	// without sending. Subsequent published events still arrive on the channel.
-	putDrainedKey(t, tc, "shard-after-cancel")
+	got := receiveSnapshot(t, ch)
+	assert.Equal(t, []string{"shard-pre-existing"}, got)
 
-	select {
-	case snap := <-ch:
-		// Either we got the initial empty snapshot, the post-PUT snapshot, or
-		// nothing at all (because the goroutine bailed early). Any of these is
-		// fine; we just assert there's no panic and the channel still works.
-		_ = snap
-	case <-time.After(time.Second):
-		// No snapshot is also acceptable: the cancelled-context branch in
-		// subscribe just skipped the initial send.
-	}
+	putDrainedKey(t, tc, "shard-post-cancel")
+	got = receiveSnapshot(t, ch)
+	assert.Equal(t, []string{"shard-post-cancel", "shard-pre-existing"}, got)
 }

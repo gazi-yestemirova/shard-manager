@@ -9,35 +9,34 @@ import (
 	"github.com/cadence-workflow/shard-manager/common/log/tag"
 )
 
-// pubSub fans out drained-shard snapshots to subscribers. Like the executor
-// state pubsub it is non-blocking on publish: slow consumers drop updates
-// rather than back-pressuring the watch goroutine.
-//
-// The full snapshot is sent on every publish so consumers can rebuild their
-// drained set.
+// pubSub fans out drained-shard snapshots to size-1 buffered subscribers.
+// subscribe seeds the initial snapshot under p.mu so it is ordered before
+// any later publish; publish coalesces against the buffer (drain-then-push)
+// so the latest snapshot always wins and slow consumers never get pinned to
+// stale state. Single publisher per namespace (the watch goroutine).
 type pubSub struct {
 	mu          sync.RWMutex
-	subscribers map[string]chan<- []string
+	subscribers map[string]chan []string
 	logger      log.Logger
 	namespace   string
 }
 
 func newPubSub(logger log.Logger, namespace string) *pubSub {
 	return &pubSub{
-		subscribers: make(map[string]chan<- []string),
+		subscribers: make(map[string]chan []string),
 		logger:      logger,
 		namespace:   namespace,
 	}
 }
 
-// subscribe returns the receive channel and an idempotent unsubscribe func.
-// the channel is unbuffered; non-blocking publishes drop updates if the
-// consumer is not ready.
-func (p *pubSub) subscribe() (chan []string, func()) {
-	ch := make(chan []string)
+// subscribe registers a subscriber, seeds it with `initial` under p.mu, and
+// returns the channel plus an idempotent unsubscribe func.
+func (p *pubSub) subscribe(initial []string) (<-chan []string, func()) {
+	ch := make(chan []string, 1)
 	id := uuid.New().String()
 
 	p.mu.Lock()
+	ch <- initial
 	p.subscribers[id] = ch
 	p.mu.Unlock()
 
@@ -56,10 +55,17 @@ func (p *pubSub) publish(snapshot []string) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	for _, ch := range p.subscribers {
+		// Drain any stale snapshot, then push the latest (coalesce).
+		select {
+		case <-ch:
+			p.logger.Debug("drained shards subscriber missed an intermediate snapshot, coalescing to latest", tag.ShardNamespace(p.namespace))
+		default:
+		}
 		select {
 		case ch <- snapshot:
 		default:
-			p.logger.Warn("drained shards subscriber not keeping up, dropping update", tag.ShardNamespace(p.namespace))
+			// Unreachable under single-publisher locking; logged so we notice if it isn't.
+			p.logger.Warn("drained shards: latest snapshot deferred, will retry on next publish", tag.ShardNamespace(p.namespace))
 		}
 	}
 }

@@ -330,7 +330,7 @@ func (s *executorStoreImpl) GetState(ctx context.Context, namespace string) (*st
 		}
 	}
 
-	drainedShards, err := s.loadDrainedShardSet(ctx, namespace)
+	drainedShards, err := s.loadDrainedShardsForState(ctx, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("get drained shards: %w", err)
 	}
@@ -341,6 +341,16 @@ func (s *executorStoreImpl) GetState(ctx context.Context, namespace string) (*st
 		ShardAssignments: assignedStates,
 		DrainedShards:    drainedShards,
 	}, nil
+}
+
+// loadDrainedShardsForState reads the drained-shard set from the in-memory
+// cache when warm and falls back to an etcd prefix read on cold start. Used
+// by GetState to keep the leader's rebalance loop off etcd in steady state.
+func (s *executorStoreImpl) loadDrainedShardsForState(ctx context.Context, namespace string) (map[string]struct{}, error) {
+	if set, ready := s.drainedShardsCache.Snapshot(namespace); ready {
+		return set, nil
+	}
+	return s.loadDrainedShardSet(ctx, namespace)
 }
 
 // loadDrainedShardSet reads all drained-shard keys for the namespace and returns them as a set.
@@ -1004,11 +1014,8 @@ func (s *executorStoreImpl) GetDrainedShards(ctx context.Context, namespace stri
 	return result, nil
 }
 
-// GetDrainedShard checks the in-memory drainedShardsCache first (which is
-// lazily warmed by the per-namespace watcher and stays current via etcd watch
-// events). When the cache hasn't yet received its first snapshot for the
-// namespace it falls back to a single-key point read on the drained-shard key.
-// Once warm, every call is an in-process map lookup.
+// GetDrainedShard reads from the in-memory cache when warm; falls back to a
+// single-key etcd read during cold start.
 func (s *executorStoreImpl) GetDrainedShard(ctx context.Context, namespace, shardID string) (bool, error) {
 	if drained, ready := s.drainedShardsCache.Contains(namespace, shardID); ready {
 		return drained, nil
@@ -1020,9 +1027,7 @@ func (s *executorStoreImpl) GetDrainedShard(ctx context.Context, namespace, shar
 	return resp.Count > 0, nil
 }
 
-// SubscribeToDrainedShardsChanges fans out drained-shard updates from a single
-// shared etcd watch (one per namespace) to N subscribers via the
-// drainedshardscache pubsub.
+// SubscribeToDrainedShardsChanges fans out updates via the drainedshardscache pubsub.
 func (s *executorStoreImpl) SubscribeToDrainedShardsChanges(ctx context.Context, namespace string) (<-chan []string, func(), error) {
 	return s.drainedShardsCache.Subscribe(ctx, namespace)
 }

@@ -86,32 +86,31 @@ func (n *namespaceCache) contains(shardKey string) (drained, ready bool) {
 	return drained, true
 }
 
-// subscribe returns a channel that receives the current snapshot followed by
-// every later update.
-// callers must drain the channel; if they fall behind,
-// the publisher drops updates rather than blocking.
-func (n *namespaceCache) subscribe(ctx context.Context) (<-chan []string, func()) {
-	subCh, unsub := n.pubSub.subscribe()
-
-	// Send the initial snapshot in a separate goroutine, so we don't block on a
-	// slow consumer while holding any locks. We swallow the snapshot if ctx is
-	// cancelled before the subscriber starts reading.
-	go func() {
-		snapshot := n.snapshot()
-		select {
-		case <-ctx.Done():
-			n.logger.Debug("drained shards subscriber context cancelled before initial snapshot")
-		case subCh <- snapshot:
-		}
-	}()
-
-	return subCh, unsub
+// subscribe seeds the current snapshot synchronously and streams every
+// subsequent update. Slow consumers see coalesced updates, never stale ones.
+func (n *namespaceCache) subscribe() (<-chan []string, func()) {
+	return n.pubSub.subscribe(n.snapshot())
 }
 
 func (n *namespaceCache) snapshot() []string {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return snapshotFromSet(n.set)
+}
+
+// snapshotSet returns a copy of the drained-shard set; ready is
+// false until the first watch snapshot has landed.
+func (n *namespaceCache) snapshotSet() (map[string]struct{}, bool) {
+	if !n.ready.Load() {
+		return nil, false
+	}
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	out := make(map[string]struct{}, len(n.set))
+	for k := range n.set {
+		out[k] = struct{}{}
+	}
+	return out, true
 }
 
 // refreshLoop is the long-running goroutine that snapshots the prefix and

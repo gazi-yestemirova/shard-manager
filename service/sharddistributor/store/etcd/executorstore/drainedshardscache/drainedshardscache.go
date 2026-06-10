@@ -71,18 +71,15 @@ func (c *Cache) Stop() {
 	c.wg.Wait()
 }
 
-// Subscribe returns a channel that emits the full set of drained shard keys
-// for the namespace. The first message is always the current snapshot (which
-// may be empty); subsequent messages arrive whenever the set changes. The
-// returned cancel func releases the subscription and may be called from any
-// goroutine. The channel is closed when ctx is cancelled, when cancel is
-// called, or when the cache is stopped.
-func (c *Cache) Subscribe(ctx context.Context, namespace string) (<-chan []string, func(), error) {
+// Subscribe emits the current drained-shard snapshot followed by every
+// change. The cancel func is the canonical way to release the subscription
+// (`defer unsub()`); ctx is unused but kept for store-interface symmetry.
+func (c *Cache) Subscribe(_ context.Context, namespace string) (<-chan []string, func(), error) {
 	ns, err := c.getOrCreate(namespace)
 	if err != nil {
 		return nil, nil, fmt.Errorf("get drained shards namespace cache: %w", err)
 	}
-	ch, unsub := ns.subscribe(ctx)
+	ch, unsub := ns.subscribe()
 	return ch, unsub, nil
 }
 
@@ -100,6 +97,18 @@ func (c *Cache) Contains(namespace, shardKey string) (drained, ready bool) {
 		return false, false
 	}
 	return ns.contains(shardKey)
+}
+
+// Snapshot returns a copy of the drained-shard set; ready is
+// false until the watcher has applied its first snapshot, mirroring
+// Contains semantics.
+func (c *Cache) Snapshot(namespace string) (set map[string]struct{}, ready bool) {
+	ns, err := c.getOrCreate(namespace)
+	if err != nil {
+		c.logger.Error("drainedshardscache: failed to create namespace cache", tag.Error(err))
+		return nil, false
+	}
+	return ns.snapshotSet()
 }
 
 func (c *Cache) getOrCreate(namespace string) (*namespaceCache, error) {
