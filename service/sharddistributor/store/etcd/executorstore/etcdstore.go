@@ -1004,10 +1004,15 @@ func (s *executorStoreImpl) GetDrainedShards(ctx context.Context, namespace stri
 	return result, nil
 }
 
-// GetDrainedShard performs a single-key Get on the drained-shard key. It is
-// the cold-start fallback used while the in-memory drainedShardsCache hasn't
-// received its first snapshot for the namespace.
+// GetDrainedShard checks the in-memory drainedShardsCache first (which is
+// lazily warmed by the per-namespace watcher and stays current via etcd watch
+// events). When the cache hasn't yet received its first snapshot for the
+// namespace it falls back to a single-key point read on the drained-shard key.
+// Once warm, every call is an in-process map lookup.
 func (s *executorStoreImpl) GetDrainedShard(ctx context.Context, namespace, shardID string) (bool, error) {
+	if drained, ready := s.drainedShardsCache.Contains(namespace, shardID); ready {
+		return drained, nil
+	}
 	resp, err := s.client.Get(ctx, etcdkeys.BuildDrainedShardKey(s.prefix, namespace, shardID), clientv3.WithCountOnly())
 	if err != nil {
 		return false, fmt.Errorf("get drained shard: %w", err)
@@ -1015,17 +1020,9 @@ func (s *executorStoreImpl) GetDrainedShard(ctx context.Context, namespace, shar
 	return resp.Count > 0, nil
 }
 
-// IsShardDrainedCached delegates to the in-memory drainedShardsCache. Both
-// reads and the lazy creation of the per-namespace watcher are pure
-// in-process; the caller decides what to do when ready=false.
-func (s *executorStoreImpl) IsShardDrainedCached(namespace, shardID string) (drained, ready bool) {
-	return s.drainedShardsCache.Contains(namespace, shardID)
-}
-
 // SubscribeToDrainedShardsChanges fans out drained-shard updates from a single
 // shared etcd watch (one per namespace) to N subscribers via the
-// drainedshardscache pubsub. The first message on the returned channel is
-// always the current snapshot, even if the namespace has nothing drained.
+// drainedshardscache pubsub.
 func (s *executorStoreImpl) SubscribeToDrainedShardsChanges(ctx context.Context, namespace string) (<-chan []string, func(), error) {
 	return s.drainedShardsCache.Subscribe(ctx, namespace)
 }

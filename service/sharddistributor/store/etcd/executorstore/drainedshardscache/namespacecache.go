@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	// watchRetryInterval matches the existing executor cache so reconnect
+	// watchRetryInterval matches the existing executor cache, so reconnect
 	// behaviour is consistent across the two watchers.
 	watchRetryInterval = 100 * time.Millisecond
 	watchJitterCoeff   = 0.5
@@ -28,9 +28,7 @@ const (
 )
 
 // namespaceCache owns the etcd watch and in-memory drained-shard set for one
-// namespace. It is created lazily by Cache on first reference and runs a
-// single goroutine that snapshots the prefix, watches for changes, and
-// publishes updates to subscribers.
+// namespace.
 type namespaceCache struct {
 	mu    sync.RWMutex // protects set
 	set   map[string]struct{}
@@ -77,7 +75,7 @@ func (n *namespaceCache) start(wg *sync.WaitGroup) {
 }
 
 // contains reports membership; ready is false until the first successful
-// snapshot lands so callers know to fall back to a point read.
+// snapshot lands, so callers know to fall back to a point read.
 func (n *namespaceCache) contains(shardKey string) (drained, ready bool) {
 	if !n.ready.Load() {
 		return false, false
@@ -89,12 +87,13 @@ func (n *namespaceCache) contains(shardKey string) (drained, ready bool) {
 }
 
 // subscribe returns a channel that receives the current snapshot followed by
-// every subsequent update. Callers must drain the channel; if they fall behind
+// every later update.
+// callers must drain the channel; if they fall behind,
 // the publisher drops updates rather than blocking.
 func (n *namespaceCache) subscribe(ctx context.Context) (<-chan []string, func()) {
 	subCh, unsub := n.pubSub.subscribe()
 
-	// Send the initial snapshot in a separate goroutine so we don't block on a
+	// Send the initial snapshot in a separate goroutine, so we don't block on a
 	// slow consumer while holding any locks. We swallow the snapshot if ctx is
 	// cancelled before the subscriber starts reading.
 	go func() {
@@ -208,16 +207,14 @@ func (n *namespaceCache) applyInitialSnapshot(ctx context.Context) (int64, error
 	n.mu.Unlock()
 	n.ready.Store(true)
 
-	// Always publish on (re-)snapshot so subscribers converge after a watch
-	// reconnect, even if the resulting set is identical to the prior one.
 	n.pubSub.publish(n.snapshot())
 
 	return resp.Header.Revision, nil
 }
 
 // applyEvents incrementally updates the set based on watch events. It returns
-// true when at least one event actually changed membership so the caller can
-// skip publishing on no-op events (e.g. duplicate PUTs).
+// true when at least one event actually changed membership, so the caller can
+// skip publishing on no-op events.
 func (n *namespaceCache) applyEvents(events []*clientv3.Event) bool {
 	if len(events) == 0 {
 		return false

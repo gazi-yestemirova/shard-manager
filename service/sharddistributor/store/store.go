@@ -120,27 +120,10 @@ type Store interface {
 	GetDrainedShards(ctx context.Context, namespace string) ([]string, error)
 
 	// GetDrainedShard reports whether a single shard is currently drained.
-	// Backends should implement this as a point read on the drained-shard key
-	// rather than a prefix scan, since this sits on the GetShardOwner hot path.
-	// Most callers should prefer IsShardDrainedCached and only fall back to
-	// this point read while the in-memory cache is still cold.
 	GetDrainedShard(ctx context.Context, namespace string, shardID string) (bool, error)
-
-	// IsShardDrainedCached returns drained-state from the backend's in-memory
-	// drained-shards cache. `ready` is false if the cache has not yet received
-	// its first snapshot for the namespace, in which case callers must fall
-	// back to GetDrainedShard. Implementations are expected to make this a
-	// pure in-memory lookup (no context, no error) and to lazily start any
-	// underlying watcher on first reference. Backends without a cache may
-	// return (false, false) unconditionally to force the fallback path.
-	IsShardDrainedCached(namespace string, shardID string) (drained, ready bool)
 
 	// SubscribeToDrainedShardsChanges returns a channel that emits the full
 	// snapshot of drained shard keys for the namespace whenever the set
-	// changes. The first message contains the current snapshot (which may be
-	// empty). Backends are expected to share a single watcher per namespace
-	// across subscribers and fan out via pubsub. The returned cancel func
-	// releases the subscription; the channel is closed when ctx is cancelled
-	// or the cancel func is invoked.
+	// changes.
 	SubscribeToDrainedShardsChanges(ctx context.Context, namespace string) (<-chan []string, func(), error)
 }

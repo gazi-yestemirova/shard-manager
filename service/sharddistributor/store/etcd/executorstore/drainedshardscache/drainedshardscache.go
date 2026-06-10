@@ -5,8 +5,8 @@
 // (handler.isShardDrained, ephemeral assignment) reads the same underlying set
 // directly via Contains.
 //
-// The design mirrors the shardcache package next door but is intentionally
-// simpler: drained state is just a set of keys, so events can be applied
+// The design mirrors the shardcache package but is intentionally simpler:
+// drained state is just a set of keys, so events can be applied
 // incrementally without re-fetching the whole prefix on every change.
 package drainedshardscache
 

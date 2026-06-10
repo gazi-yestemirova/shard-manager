@@ -184,15 +184,9 @@ func (h *handlerImpl) InspectShard(ctx context.Context, request *types.GetShardO
 	}, nil
 }
 
-// isShardDrained returns true if the shard is currently in the drained list
-// for the namespace. The first reference to a namespace lazily warms the
-// store's in-memory cache, so the very first request may take the slow path
-// (a single-key etcd Get); after that, every check is an in-process map
-// lookup. Errors from the storage layer are wrapped as InternalServiceError.
+// isShardDrained returns true if the shard is currently in the drained list for the namespace.
+// Errors from the storage layer are wrapped as InternalServiceError.
 func (h *handlerImpl) isShardDrained(ctx context.Context, namespace, shardKey string) (bool, error) {
-	if drained, ready := h.storage.IsShardDrainedCached(namespace, shardKey); ready {
-		return drained, nil
-	}
 	drained, err := h.storage.GetDrainedShard(ctx, namespace, shardKey)
 	if err != nil {
 		return false, &types.InternalServiceError{Message: fmt.Sprintf("failed to read drained shard: %v", err)}
@@ -358,8 +352,7 @@ func (h *handlerImpl) WatchNamespaceState(request *types.WatchNamespaceStateRequ
 
 	// Subscribe to state changes from storage. We need both the executor
 	// assignment stream and the drained-shards stream so spectators get a
-	// single, consistent view per push and can short-circuit drained-shard
-	// requests locally.
+	// single, consistent view per push and can short-circuit drained-shard request locally.
 	assignmentCh, unsubAssignments, err := h.storage.SubscribeToAssignmentChanges(ctx, request.Namespace)
 	if err != nil {
 		return &types.InternalServiceError{Message: fmt.Sprintf("failed to subscribe to namespace state: %v", err)}
@@ -372,10 +365,6 @@ func (h *handlerImpl) WatchNamespaceState(request *types.WatchNamespaceStateRequ
 	}
 	defer unsubDrained()
 
-	// Hold the most recent snapshot from each channel and only start sending
-	// once both initial snapshots have landed. This prevents an early push
-	// that omits drained-shard data, which spectators would otherwise treat
-	// as "nothing drained" while serving cached owners for drained shards.
 	var (
 		latestAssignments map[*store.ShardOwner][]string
 		latestDrained     []string

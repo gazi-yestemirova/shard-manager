@@ -712,10 +712,7 @@ func (m *WatchNamespaceStateRequest) GetNamespace() string {
 type WatchNamespaceStateResponse struct {
 	// Executor information with assigned shards
 	Executors []*ExecutorInfo `protobuf:"bytes,1,rep,name=executors,proto3" json:"executors,omitempty"`
-	// Full snapshot of shard keys currently drained for the namespace. Pushed
-	// on every update so subscribers can rebuild their drained set wholesale
-	// rather than reasoning about deltas. An empty list means nothing is
-	// drained right now.
+	// Snapshot of shard keys currently drained for the namespace
 	DrainedShardKeys     []string `protobuf:"bytes,2,rep,name=drained_shard_keys,json=drainedShardKeys,proto3" json:"drained_shard_keys,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

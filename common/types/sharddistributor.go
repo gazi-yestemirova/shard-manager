@@ -470,9 +470,8 @@ func (v *WatchNamespaceStateRequest) GetNamespace() (o string) {
 
 type WatchNamespaceStateResponse struct {
 	Executors []*ExecutorShardAssignment
-	// DrainedShardKeys is a full snapshot of shard keys currently drained
-	// for the namespace. The server pushes the complete set on every update
-	// so subscribers can swap their drained map wholesale.
+	// DrainedShardKeys is a full snapshot of shard keys
+	// currently drained for the namespace
 	DrainedShardKeys []string
 }
 

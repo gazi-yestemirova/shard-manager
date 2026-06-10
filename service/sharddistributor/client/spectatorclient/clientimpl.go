@@ -198,8 +198,7 @@ func (s *spectatorImpl) handleResponse(response *types.WatchNamespaceStateRespon
 		}
 	}
 
-	// The server pushes the full drained-shards snapshot on every update, so
-	// we can rebuild the lookup set wholesale rather than diffing.
+	// The server pushes the full drained-shards snapshot on every update
 	drainedShards := make(map[string]struct{}, len(response.DrainedShardKeys))
 	for _, key := range response.DrainedShardKeys {
 		drainedShards[key] = struct{}{}

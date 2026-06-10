@@ -14,8 +14,7 @@ import (
 // rather than back-pressuring the watch goroutine.
 //
 // The full snapshot is sent on every publish so consumers can rebuild their
-// drained set wholesale. This avoids the complexity of reconciling deltas
-// across reconnects and missed updates.
+// drained set.
 type pubSub struct {
 	mu          sync.RWMutex
 	subscribers map[string]chan<- []string
@@ -32,7 +31,7 @@ func newPubSub(logger log.Logger, namespace string) *pubSub {
 }
 
 // subscribe returns the receive channel and an idempotent unsubscribe func.
-// The channel is unbuffered; non-blocking publishes drop updates if the
+// the channel is unbuffered; non-blocking publishes drop updates if the
 // consumer is not ready.
 func (p *pubSub) subscribe() (chan []string, func()) {
 	ch := make(chan []string)

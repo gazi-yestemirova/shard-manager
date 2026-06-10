@@ -262,7 +262,7 @@ func TestGetShardOwner_TimeoutBeforeFirstState(t *testing.T) {
 
 // TestGetShardOwner_DrainedShortCircuits exercises the local drained-set cache
 // added alongside the WatchNamespaceState stream. A drained shard must return
-// types.ShardDrainedError without ever invoking the underlying client, while a
+// types.ShardDrainedError without hitting the client, while a
 // shard that gets undrained on the next push must fall through to the cached
 // owner without triggering an RPC.
 func TestGetShardOwner_DrainedShortCircuits(t *testing.T) {

@@ -159,10 +159,6 @@ func (c *meteredStore) GetState(ctx context.Context, namespace string) (np1 *sto
 	return
 }
 
-func (c *meteredStore) IsShardDrainedCached(namespace string, shardID string) (drained bool, ready bool) {
-	return c.wrapped.IsShardDrainedCached(namespace, shardID)
-}
-
 func (c *meteredStore) RecordHeartbeat(ctx context.Context, namespace string, executorID string, state store.HeartbeatState) (err error) {
 	op := func() error {
 		err = c.wrapped.RecordHeartbeat(ctx, namespace, executorID, state)

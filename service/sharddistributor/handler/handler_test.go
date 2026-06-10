@@ -264,9 +264,7 @@ func TestGetShardOwner(t *testing.T) {
 
 			handler := newTestHandler(t, cfg, mockStorage)
 
-			// Default to "cache cold" so isShardDrained falls back to GetDrainedShard.
-			// Tests that exercise cache-warm semantics override these explicitly.
-			mockStorage.EXPECT().IsShardDrainedCached(gomock.Any(), gomock.Any()).Return(false, false).AnyTimes()
+			// Default to "not drained" for any shard the test doesn't override.
 			mockStorage.EXPECT().GetDrainedShard(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
 
 			if tt.setupMocks != nil {
@@ -663,8 +661,7 @@ func TestGetShardOwner_DrainedShard(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockStorage := store.NewMockStore(ctrl)
 
-			// Cache cold -> handler falls back to GetDrainedShard, which reports drained.
-			mockStorage.EXPECT().IsShardDrainedCached(tc.namespace, "shard-7").Return(false, false)
+			// Storage reports the shard as drained.
 			mockStorage.EXPECT().GetDrainedShard(gomock.Any(), tc.namespace, "shard-7").Return(true, nil)
 
 			h := newTestHandler(t, cfg, mockStorage)
@@ -680,34 +677,6 @@ func TestGetShardOwner_DrainedShard(t *testing.T) {
 			require.Equal(t, tc.namespace, drainedErr.Namespace)
 		})
 	}
-}
-
-// TestGetShardOwner_DrainedShard_CacheWarm asserts that once the in-memory
-// drained-shards cache has the namespace's first snapshot, isShardDrained
-// short-circuits without doing a point read.
-func TestGetShardOwner_DrainedShard_CacheWarm(t *testing.T) {
-	cfg := config.ShardDistribution{
-		Namespaces: []config.Namespace{
-			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
-		},
-	}
-
-	ctrl := gomock.NewController(t)
-	mockStorage := store.NewMockStore(ctrl)
-
-	// Cache reports the shard as drained — no point read should happen.
-	mockStorage.EXPECT().IsShardDrainedCached(_testNamespaceFixed, "shard-7").Return(true, true)
-
-	h := newTestHandler(t, cfg, mockStorage)
-	resp, err := h.GetShardOwner(context.Background(), &types.GetShardOwnerRequest{
-		Namespace: _testNamespaceFixed,
-		ShardKey:  "shard-7",
-	})
-	require.Error(t, err)
-	require.Nil(t, resp)
-	var drainedErr *types.ShardDrainedError
-	require.ErrorAs(t, err, &drainedErr)
-	require.Equal(t, "shard-7", drainedErr.ShardKey)
 }
 
 func TestDrainShards(t *testing.T) {
