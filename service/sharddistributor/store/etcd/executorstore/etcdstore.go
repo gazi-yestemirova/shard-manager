@@ -763,14 +763,12 @@ func (s *executorStoreImpl) commitOpsInBatches(ctx context.Context, ops []client
 	if len(ops) == 0 {
 		return nil, nil
 	}
-	maxOpsPerTxn := s.cfg.MaxEtcdTxnOps()
-	if maxOpsPerTxn < 1 {
-		maxOpsPerTxn = 1
+	batchSize := s.cfg.MaxEtcdTxnOps()
+	if batchSize < 1 {
+		batchSize = 1
 	}
 
-	numBatches := (len(ops) + maxOpsPerTxn - 1) / maxOpsPerTxn
-	batchSize := (len(ops) + numBatches - 1) / numBatches
-	responses := make([]*clientv3.TxnResponse, 0, numBatches)
+	var responses []*clientv3.TxnResponse
 
 	for i := 0; i < len(ops); i += batchSize {
 		end := i + batchSize
