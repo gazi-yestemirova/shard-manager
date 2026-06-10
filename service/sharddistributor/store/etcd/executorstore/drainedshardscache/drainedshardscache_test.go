@@ -289,25 +289,17 @@ func TestCache_SubscribeUnknownNamespaceWaitsForInitialSnapshot(t *testing.T) {
 	assert.Empty(t, got)
 }
 
-// Initial snapshot is seeded synchronously, so a cancelled ctx no longer
-// suppresses or races with delivery; subsequent updates still flow.
-func TestSubscribeWithCancelledContextStillDeliversInitialSnapshot(t *testing.T) {
+// Subscribe waits for the cache to be warm before seeding; a cancelled ctx
+// short-circuits the wait with ctx.Err() instead of returning a stale
+// channel.
+func TestSubscribeWithCancelledContextReturnsError(t *testing.T) {
 	tc := testhelper.SetupStoreTestCluster(t)
-	putDrainedKey(t, tc, "shard-pre-existing")
-
 	c := newCache(t, tc)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	ch, unsub, err := c.Subscribe(ctx, tc.Namespace)
-	require.NoError(t, err)
-	defer unsub()
-
-	got := receiveSnapshot(t, ch)
-	assert.Equal(t, []string{"shard-pre-existing"}, got)
-
-	putDrainedKey(t, tc, "shard-post-cancel")
-	got = receiveSnapshot(t, ch)
-	assert.Equal(t, []string{"shard-post-cancel", "shard-pre-existing"}, got)
+	_, _, err := c.Subscribe(ctx, tc.Namespace)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.Canceled)
 }

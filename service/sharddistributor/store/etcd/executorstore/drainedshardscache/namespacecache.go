@@ -2,6 +2,7 @@ package drainedshardscache
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -27,12 +28,15 @@ const (
 	watchTypeTagValue = "drained_shards_cache"
 )
 
+var errCacheStopped = errors.New("drainedshardscache: stopped")
+
 // namespaceCache owns the etcd watch and in-memory drained-shard set for one
 // namespace.
 type namespaceCache struct {
-	mu    sync.RWMutex // protects set
-	set   map[string]struct{}
-	ready atomic.Bool
+	mu      sync.RWMutex // protects set
+	set     map[string]struct{}
+	ready   atomic.Bool
+	readyCh chan struct{} // closed once ready transitions false -> true
 
 	namespace     string
 	etcdPrefix    string
@@ -55,6 +59,7 @@ func newNamespaceCache(
 ) *namespaceCache {
 	return &namespaceCache{
 		set:           make(map[string]struct{}),
+		readyCh:       make(chan struct{}),
 		namespace:     namespace,
 		etcdPrefix:    etcdPrefix,
 		stopCh:        stopCh,
@@ -86,10 +91,19 @@ func (n *namespaceCache) contains(shardKey string) (drained, ready bool) {
 	return drained, true
 }
 
-// subscribe seeds the current snapshot synchronously and streams every
-// subsequent update. Slow consumers see coalesced updates, never stale ones.
-func (n *namespaceCache) subscribe() (<-chan []string, func()) {
-	return n.pubSub.subscribe(n.snapshot())
+// subscribe blocks until the cache is warm (or ctx/stopCh fires), then
+// registers a subscriber seeded with the current snapshot. Waiting ensures
+// the seed is never the empty cold-start state.
+func (n *namespaceCache) subscribe(ctx context.Context) (<-chan []string, func(), error) {
+	select {
+	case <-n.readyCh:
+	case <-ctx.Done():
+		return nil, nil, ctx.Err()
+	case <-n.stopCh:
+		return nil, nil, errCacheStopped
+	}
+	ch, unsub := n.pubSub.subscribe(n.snapshot())
+	return ch, unsub, nil
 }
 
 func (n *namespaceCache) snapshot() []string {
@@ -204,7 +218,9 @@ func (n *namespaceCache) applyInitialSnapshot(ctx context.Context) (int64, error
 	n.mu.Lock()
 	n.set = fresh
 	n.mu.Unlock()
-	n.ready.Store(true)
+	if n.ready.CompareAndSwap(false, true) {
+		close(n.readyCh)
+	}
 
 	n.pubSub.publish(n.snapshot())
 

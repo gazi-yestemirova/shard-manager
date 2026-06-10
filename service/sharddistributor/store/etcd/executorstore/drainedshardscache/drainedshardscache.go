@@ -71,16 +71,15 @@ func (c *Cache) Stop() {
 	c.wg.Wait()
 }
 
-// Subscribe emits the current drained-shard snapshot followed by every
-// change. The cancel func is the canonical way to release the subscription
-// (`defer unsub()`); ctx is unused but kept for store-interface symmetry.
-func (c *Cache) Subscribe(_ context.Context, namespace string) (<-chan []string, func(), error) {
+// Subscribe blocks briefly until the per-namespace cache is warm, then emits
+// the current snapshot followed by every change.
+// Returns ctx.Err() if the caller cancels before the cache is ready
+func (c *Cache) Subscribe(ctx context.Context, namespace string) (<-chan []string, func(), error) {
 	ns, err := c.getOrCreate(namespace)
 	if err != nil {
 		return nil, nil, fmt.Errorf("get drained shards namespace cache: %w", err)
 	}
-	ch, unsub := ns.subscribe()
-	return ch, unsub, nil
+	return ns.subscribe(ctx)
 }
 
 // Contains reports whether a shard key is currently drained for the namespace.
