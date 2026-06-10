@@ -1567,7 +1567,7 @@ func TestRebalanceShards_DrainedShardNotReassignedToOtherExecutor(t *testing.T) 
 	require.NoError(t, err)
 }
 
-func TestCountAssignedDrainedShards(t *testing.T) {
+func TestHasAssignedDrainedShards(t *testing.T) {
 	mocks := setupProcessorTest(t, config.NamespaceTypeFixed)
 	defer mocks.ctrl.Finish()
 	processor := mocks.factory.CreateProcessor(mocks.cfg, mocks.store, mocks.election).(*namespaceProcessor)
@@ -1575,12 +1575,12 @@ func TestCountAssignedDrainedShards(t *testing.T) {
 	tests := []struct {
 		name  string
 		state *store.NamespaceState
-		want  int
+		want  bool
 	}{
 		{
 			name:  "no drained shards",
 			state: &store.NamespaceState{},
-			want:  0,
+			want:  false,
 		},
 		{
 			name: "drained shard not assigned anywhere",
@@ -1590,7 +1590,7 @@ func TestCountAssignedDrainedShards(t *testing.T) {
 				},
 				DrainedShards: map[string]struct{}{"42": {}},
 			},
-			want: 0,
+			want: false,
 		},
 		{
 			name: "two drained shards each assigned",
@@ -1601,13 +1601,13 @@ func TestCountAssignedDrainedShards(t *testing.T) {
 				},
 				DrainedShards: map[string]struct{}{"0": {}, "2": {}},
 			},
-			want: 2,
+			want: true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := processor.countAssignedDrainedShards(tc.state)
+			got := processor.hasAssignedDrainedShards(tc.state)
 			assert.Equal(t, tc.want, got)
 		})
 	}
