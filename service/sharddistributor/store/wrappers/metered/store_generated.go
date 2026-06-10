@@ -159,6 +159,10 @@ func (c *meteredStore) GetState(ctx context.Context, namespace string) (np1 *sto
 	return
 }
 
+func (c *meteredStore) IsShardDrainedCached(namespace string, shardID string) (drained bool, ready bool) {
+	return c.wrapped.IsShardDrainedCached(namespace, shardID)
+}
+
 func (c *meteredStore) RecordHeartbeat(ctx context.Context, namespace string, executorID string, state store.HeartbeatState) (err error) {
 	op := func() error {
 		err = c.wrapped.RecordHeartbeat(ctx, namespace, executorID, state)
@@ -186,6 +190,16 @@ func (c *meteredStore) SubscribeToAssignmentChanges(ctx context.Context, namespa
 	}
 
 	err = c.call(metrics.ShardDistributorStoreSubscribeToAssignmentChangesScope, op, metrics.NamespaceTag(namespace))
+	return
+}
+
+func (c *meteredStore) SubscribeToDrainedShardsChanges(ctx context.Context, namespace string) (ch1 <-chan []string, f1 func(), err error) {
+	op := func() error {
+		ch1, f1, err = c.wrapped.SubscribeToDrainedShardsChanges(ctx, namespace)
+		return err
+	}
+
+	err = c.call(metrics.ShardDistributorStoreSubscribeToDrainedShardsChangesScope, op, metrics.NamespaceTag(namespace))
 	return
 }
 

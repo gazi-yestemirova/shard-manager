@@ -49,10 +49,12 @@ type spectatorImpl struct {
 	stream *spectatorStream
 	stopWG sync.WaitGroup
 
-	// State storage with lock for thread-safe access
-	// Map from shard ID to shard owner (executor ID + metadata)
-	stateMu      sync.RWMutex
-	shardToOwner map[string]*ShardOwner
+	// State storage with lock for thread-safe access. shardToOwner and
+	// drainedShards are swapped together under stateMu on every push so that
+	// GetShardOwner sees a consistent snapshot.
+	stateMu       sync.RWMutex
+	shardToOwner  map[string]*ShardOwner
+	drainedShards map[string]struct{}
 
 	// Signal to notify when first state is received
 	firstStateSignal *csync.ResettableSignal
@@ -196,8 +198,16 @@ func (s *spectatorImpl) handleResponse(response *types.WatchNamespaceStateRespon
 		}
 	}
 
+	// The server pushes the full drained-shards snapshot on every update, so
+	// we can rebuild the lookup set wholesale rather than diffing.
+	drainedShards := make(map[string]struct{}, len(response.DrainedShardKeys))
+	for _, key := range response.DrainedShardKeys {
+		drainedShards[key] = struct{}{}
+	}
+
 	s.stateMu.Lock()
 	s.shardToOwner = shardToOwner
+	s.drainedShards = drainedShards
 	s.stateMu.Unlock()
 
 	// Signal that first state has been received - this function is free to call
@@ -206,20 +216,28 @@ func (s *spectatorImpl) handleResponse(response *types.WatchNamespaceStateRespon
 
 	s.logger.Debug("Received namespace state update",
 		zap.String(tag.Namespace, s.namespace),
-		zap.Int(tag.Count, len(response.Executors)))
+		zap.Int(tag.Count, len(response.Executors)),
+		zap.Int("drained_shards", len(drainedShards)))
 }
 
 // GetShardOwner returns the full owner information including metadata for a given shard.
 // It first waits for the initial state to be received, then checks the cache.
-// If not found in cache, it falls back to querying the shard distributor directly.
+// Drained shards short-circuit with ShardDrainedError without ever hitting the
+// shard distributor; non-drained cache misses fall back to the RPC.
 func (s *spectatorImpl) GetShardOwner(ctx context.Context, shardKey string) (*ShardOwner, error) {
 	// Wait for first state to be received to avoid flooding shard distributor on startup
 	if err := s.firstStateSignal.Wait(ctx); err != nil {
 		return nil, fmt.Errorf("wait for first state: %w", err)
 	}
 
-	// Check cache first
 	s.stateMu.RLock()
+	if _, drained := s.drainedShards[shardKey]; drained {
+		s.stateMu.RUnlock()
+		return nil, &types.ShardDrainedError{
+			Namespace: s.namespace,
+			ShardKey:  shardKey,
+		}
+	}
 	owner := s.shardToOwner[shardKey]
 	s.stateMu.RUnlock()
 

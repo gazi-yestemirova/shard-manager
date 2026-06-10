@@ -260,6 +260,71 @@ func TestGetShardOwner_TimeoutBeforeFirstState(t *testing.T) {
 	assert.Contains(t, err.Error(), "wait for first state")
 }
 
+// TestGetShardOwner_DrainedShortCircuits exercises the local drained-set cache
+// added alongside the WatchNamespaceState stream. A drained shard must return
+// types.ShardDrainedError without ever invoking the underlying client, while a
+// shard that gets undrained on the next push must fall through to the cached
+// owner without triggering an RPC.
+func TestGetShardOwner_DrainedShortCircuits(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	// Strict: any GetShardOwner call would fail the test (see assertions below).
+	mockClient := sharddistributor.NewMockClient(ctrl)
+
+	spectator := &spectatorImpl{
+		namespace:        "test-ns",
+		client:           mockClient,
+		logger:           zap.NewNop(),
+		scope:            tally.NoopScope,
+		timeSource:       clock.NewRealTimeSource(),
+		firstStateSignal: csync.NewResettableSignal(),
+		enabled:          func() bool { return true },
+	}
+
+	// First push: shard-1 owned by executor-1, shard-7 currently drained.
+	spectator.handleResponse(&types.WatchNamespaceStateResponse{
+		Executors: []*types.ExecutorShardAssignment{
+			{
+				ExecutorID: "executor-1",
+				AssignedShards: []*types.Shard{
+					{ShardKey: "shard-1"},
+					{ShardKey: "shard-7"},
+				},
+			},
+		},
+		DrainedShardKeys: []string{"shard-7"},
+	})
+
+	owner, err := spectator.GetShardOwner(context.Background(), "shard-1")
+	require.NoError(t, err)
+	require.Equal(t, "executor-1", owner.ExecutorID)
+
+	// Drained shard short-circuits: no RPC, returns ShardDrainedError.
+	_, err = spectator.GetShardOwner(context.Background(), "shard-7")
+	require.Error(t, err)
+	var drainedErr *types.ShardDrainedError
+	require.ErrorAs(t, err, &drainedErr)
+	require.Equal(t, "shard-7", drainedErr.ShardKey)
+	require.Equal(t, "test-ns", drainedErr.Namespace)
+
+	// Next push: shard-7 undrained, still owned by executor-1.
+	spectator.handleResponse(&types.WatchNamespaceStateResponse{
+		Executors: []*types.ExecutorShardAssignment{
+			{
+				ExecutorID: "executor-1",
+				AssignedShards: []*types.Shard{
+					{ShardKey: "shard-1"},
+					{ShardKey: "shard-7"},
+				},
+			},
+		},
+		DrainedShardKeys: nil,
+	})
+
+	owner, err = spectator.GetShardOwner(context.Background(), "shard-7")
+	require.NoError(t, err)
+	require.Equal(t, "executor-1", owner.ExecutorID)
+}
+
 func TestWatchLoopDisabled(t *testing.T) {
 	defer goleak.VerifyNone(t)
 

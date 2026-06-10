@@ -240,6 +240,21 @@ func (mr *MockStoreMockRecorder) GetState(ctx, namespace any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockStore)(nil).GetState), ctx, namespace)
 }
 
+// IsShardDrainedCached mocks base method.
+func (m *MockStore) IsShardDrainedCached(namespace, shardID string) (bool, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsShardDrainedCached", namespace, shardID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// IsShardDrainedCached indicates an expected call of IsShardDrainedCached.
+func (mr *MockStoreMockRecorder) IsShardDrainedCached(namespace, shardID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsShardDrainedCached", reflect.TypeOf((*MockStore)(nil).IsShardDrainedCached), namespace, shardID)
+}
+
 // RecordHeartbeat mocks base method.
 func (m *MockStore) RecordHeartbeat(ctx context.Context, namespace, executorID string, state HeartbeatState) error {
 	m.ctrl.T.Helper()
@@ -283,6 +298,22 @@ func (m *MockStore) SubscribeToAssignmentChanges(ctx context.Context, namespace 
 func (mr *MockStoreMockRecorder) SubscribeToAssignmentChanges(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscribeToAssignmentChanges", reflect.TypeOf((*MockStore)(nil).SubscribeToAssignmentChanges), ctx, namespace)
+}
+
+// SubscribeToDrainedShardsChanges mocks base method.
+func (m *MockStore) SubscribeToDrainedShardsChanges(ctx context.Context, namespace string) (<-chan []string, func(), error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscribeToDrainedShardsChanges", ctx, namespace)
+	ret0, _ := ret[0].(<-chan []string)
+	ret1, _ := ret[1].(func())
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// SubscribeToDrainedShardsChanges indicates an expected call of SubscribeToDrainedShardsChanges.
+func (mr *MockStoreMockRecorder) SubscribeToDrainedShardsChanges(ctx, namespace any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscribeToDrainedShardsChanges", reflect.TypeOf((*MockStore)(nil).SubscribeToDrainedShardsChanges), ctx, namespace)
 }
 
 // SubscribeToExecutorStatusChanges mocks base method.

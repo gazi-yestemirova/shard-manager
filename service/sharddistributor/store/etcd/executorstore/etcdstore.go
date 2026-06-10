@@ -24,6 +24,7 @@ import (
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/store/etcd/etcdkeys"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/store/etcd/etcdtypes"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/store/etcd/executorstore/common"
+	"github.com/cadence-workflow/shard-manager/service/sharddistributor/store/etcd/executorstore/drainedshardscache"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/store/etcd/executorstore/shardcache"
 )
 
@@ -37,14 +38,15 @@ var (
 )
 
 type executorStoreImpl struct {
-	client        etcdclient.Client
-	prefix        string
-	logger        log.Logger
-	shardCache    *shardcache.ShardToExecutorCache
-	timeSource    clock.TimeSource
-	recordWriter  *common.RecordWriter
-	cfg           *config.Config
-	metricsClient metrics.Client
+	client             etcdclient.Client
+	prefix             string
+	logger             log.Logger
+	shardCache         *shardcache.ShardToExecutorCache
+	drainedShardsCache *drainedshardscache.Cache
+	timeSource         clock.TimeSource
+	recordWriter       *common.RecordWriter
+	cfg                *config.Config
+	metricsClient      metrics.Client
 }
 
 // shardStatisticsUpdate holds the staged statistics for a shard so we can write them
@@ -70,6 +72,7 @@ type ExecutorStoreParams struct {
 // NewStore creates a new etcd-backed store and provides it to the fx application.
 func NewStore(p ExecutorStoreParams) (store.Store, error) {
 	shardCache := shardcache.NewShardToExecutorCache(p.ETCDConfig.Prefix, p.Client, p.Logger, p.TimeSource, p.MetricsClient)
+	drainedCache := drainedshardscache.NewCache(p.ETCDConfig.Prefix, p.Client, p.Logger, p.TimeSource, p.MetricsClient)
 
 	timeSource := p.TimeSource
 	if timeSource == nil {
@@ -82,14 +85,15 @@ func NewStore(p ExecutorStoreParams) (store.Store, error) {
 	}
 
 	store := &executorStoreImpl{
-		client:        p.Client,
-		prefix:        p.ETCDConfig.Prefix,
-		logger:        p.Logger,
-		shardCache:    shardCache,
-		timeSource:    timeSource,
-		recordWriter:  recordWriter,
-		cfg:           p.Config,
-		metricsClient: p.MetricsClient,
+		client:             p.Client,
+		prefix:             p.ETCDConfig.Prefix,
+		logger:             p.Logger,
+		shardCache:         shardCache,
+		drainedShardsCache: drainedCache,
+		timeSource:         timeSource,
+		recordWriter:       recordWriter,
+		cfg:                p.Config,
+		metricsClient:      p.MetricsClient,
 	}
 
 	p.Lifecycle.Append(fx.StartStopHook(store.Start, store.Stop))
@@ -99,10 +103,12 @@ func NewStore(p ExecutorStoreParams) (store.Store, error) {
 
 func (s *executorStoreImpl) Start() {
 	s.shardCache.Start()
+	s.drainedShardsCache.Start()
 }
 
 func (s *executorStoreImpl) Stop() {
 	s.shardCache.Stop()
+	s.drainedShardsCache.Stop()
 }
 
 // --- HeartbeatStore Implementation ---
@@ -1000,14 +1006,30 @@ func (s *executorStoreImpl) GetDrainedShards(ctx context.Context, namespace stri
 	return result, nil
 }
 
-// GetDrainedShard performs a single-key Get on the drained-shard key. Sits on
-// the GetShardOwner hot path so it must not do a prefix scan.
+// GetDrainedShard performs a single-key Get on the drained-shard key. It is
+// the cold-start fallback used while the in-memory drainedShardsCache hasn't
+// received its first snapshot for the namespace.
 func (s *executorStoreImpl) GetDrainedShard(ctx context.Context, namespace, shardID string) (bool, error) {
 	resp, err := s.client.Get(ctx, etcdkeys.BuildDrainedShardKey(s.prefix, namespace, shardID), clientv3.WithCountOnly())
 	if err != nil {
 		return false, fmt.Errorf("get drained shard: %w", err)
 	}
 	return resp.Count > 0, nil
+}
+
+// IsShardDrainedCached delegates to the in-memory drainedShardsCache. Both
+// reads and the lazy creation of the per-namespace watcher are pure
+// in-process; the caller decides what to do when ready=false.
+func (s *executorStoreImpl) IsShardDrainedCached(namespace, shardID string) (drained, ready bool) {
+	return s.drainedShardsCache.Contains(namespace, shardID)
+}
+
+// SubscribeToDrainedShardsChanges fans out drained-shard updates from a single
+// shared etcd watch (one per namespace) to N subscribers via the
+// drainedshardscache pubsub. The first message on the returned channel is
+// always the current snapshot, even if the namespace has nothing drained.
+func (s *executorStoreImpl) SubscribeToDrainedShardsChanges(ctx context.Context, namespace string) (<-chan []string, func(), error) {
+	return s.drainedShardsCache.Subscribe(ctx, namespace)
 }
 
 // prepareShardStatisticsUpdates calculates the necessary changes to shard statistics based on a new shard assignment plan.

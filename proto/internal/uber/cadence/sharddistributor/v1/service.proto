@@ -137,6 +137,11 @@ message WatchNamespaceStateRequest {
 message WatchNamespaceStateResponse {
   // Executor information with assigned shards
   repeated ExecutorInfo executors = 1;
+  // Full snapshot of shard keys currently drained for the namespace. Pushed
+  // on every update so subscribers can rebuild their drained set wholesale
+  // rather than reasoning about deltas. An empty list means nothing is
+  // drained right now.
+  repeated string drained_shard_keys = 2;
 }
 
 message ExecutorInfo {

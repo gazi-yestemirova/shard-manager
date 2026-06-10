@@ -264,6 +264,9 @@ func TestGetShardOwner(t *testing.T) {
 
 			handler := newTestHandler(t, cfg, mockStorage)
 
+			// Default to "cache cold" so isShardDrained falls back to GetDrainedShard.
+			// Tests that exercise cache-warm semantics override these explicitly.
+			mockStorage.EXPECT().IsShardDrainedCached(gomock.Any(), gomock.Any()).Return(false, false).AnyTimes()
 			mockStorage.EXPECT().GetDrainedShard(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
 
 			if tt.setupMocks != nil {
@@ -417,31 +420,59 @@ func TestWatchNamespaceState(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	updatesChan := make(chan map[*store.ShardOwner][]string, 1)
-	unsubscribe := func() { close(updatesChan) }
+	assignmentCh := make(chan map[*store.ShardOwner][]string, 1)
+	unsubAssignments := func() { close(assignmentCh) }
+
+	drainedCh := make(chan []string, 2)
+	unsubDrained := func() { close(drainedCh) }
 
 	mockServer.EXPECT().Context().Return(ctx).AnyTimes()
-	mockStorage.EXPECT().SubscribeToAssignmentChanges(gomock.Any(), "test-ns").Return(updatesChan, unsubscribe, nil)
+	mockStorage.EXPECT().SubscribeToAssignmentChanges(gomock.Any(), "test-ns").Return(assignmentCh, unsubAssignments, nil)
+	mockStorage.EXPECT().SubscribeToDrainedShardsChanges(gomock.Any(), "test-ns").Return(drainedCh, unsubDrained, nil)
 
-	// Expect update send
+	// First Send happens once both initial snapshots have arrived. Subsequent
+	// drained-only update should also produce a Send carrying the latest
+	// executor view alongside the new drained list.
+	var (
+		mu        sync.Mutex
+		responses []*types.WatchNamespaceStateResponse
+	)
 	mockServer.EXPECT().Send(gomock.Any()).DoAndReturn(func(resp *types.WatchNamespaceStateResponse) error {
-		require.Len(t, resp.Executors, 1)
-		require.Equal(t, "executor-1", resp.Executors[0].ExecutorID)
+		mu.Lock()
+		responses = append(responses, resp)
+		mu.Unlock()
 		return nil
-	})
+	}).MinTimes(1)
 
-	// Send update, then cancel
 	go func() {
+		// Initial drained snapshot lands first, no executors yet -> no Send.
+		drainedCh <- []string{}
+		// Then assignment snapshot arrives -> Send #1 with empty drained.
 		time.Sleep(10 * time.Millisecond)
-		updatesChan <- map[*store.ShardOwner][]string{
+		assignmentCh <- map[*store.ShardOwner][]string{
 			{ExecutorID: "executor-1", Metadata: map[string]string{}}: {"shard-1"},
 		}
+		// New drain comes in -> Send #2 with latest executors + drained shard.
+		time.Sleep(10 * time.Millisecond)
+		drainedCh <- []string{"shard-2"}
+		time.Sleep(10 * time.Millisecond)
 		cancel()
 	}()
 
 	err := handler.WatchNamespaceState(&types.WatchNamespaceStateRequest{Namespace: "test-ns"}, mockServer)
 	require.Error(t, err)
 	require.ErrorIs(t, err, context.Canceled)
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.GreaterOrEqual(t, len(responses), 2, "expected at least one push per channel update")
+	// First push has the executor list and the empty drained snapshot.
+	require.Equal(t, "executor-1", responses[0].Executors[0].ExecutorID)
+	require.Empty(t, responses[0].DrainedShardKeys)
+	// Last push carries the new drained shard while still showing the executor.
+	last := responses[len(responses)-1]
+	require.Equal(t, "executor-1", last.Executors[0].ExecutorID)
+	require.Equal(t, []string{"shard-2"}, last.DrainedShardKeys)
 }
 
 func TestGetNamespaceState(t *testing.T) {
@@ -632,6 +663,8 @@ func TestGetShardOwner_DrainedShard(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockStorage := store.NewMockStore(ctrl)
 
+			// Cache cold -> handler falls back to GetDrainedShard, which reports drained.
+			mockStorage.EXPECT().IsShardDrainedCached(tc.namespace, "shard-7").Return(false, false)
 			mockStorage.EXPECT().GetDrainedShard(gomock.Any(), tc.namespace, "shard-7").Return(true, nil)
 
 			h := newTestHandler(t, cfg, mockStorage)
@@ -647,6 +680,34 @@ func TestGetShardOwner_DrainedShard(t *testing.T) {
 			require.Equal(t, tc.namespace, drainedErr.Namespace)
 		})
 	}
+}
+
+// TestGetShardOwner_DrainedShard_CacheWarm asserts that once the in-memory
+// drained-shards cache has the namespace's first snapshot, isShardDrained
+// short-circuits without doing a point read.
+func TestGetShardOwner_DrainedShard_CacheWarm(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	mockStorage := store.NewMockStore(ctrl)
+
+	// Cache reports the shard as drained — no point read should happen.
+	mockStorage.EXPECT().IsShardDrainedCached(_testNamespaceFixed, "shard-7").Return(true, true)
+
+	h := newTestHandler(t, cfg, mockStorage)
+	resp, err := h.GetShardOwner(context.Background(), &types.GetShardOwnerRequest{
+		Namespace: _testNamespaceFixed,
+		ShardKey:  "shard-7",
+	})
+	require.Error(t, err)
+	require.Nil(t, resp)
+	var drainedErr *types.ShardDrainedError
+	require.ErrorAs(t, err, &drainedErr)
+	require.Equal(t, "shard-7", drainedErr.ShardKey)
 }
 
 func TestDrainShards(t *testing.T) {

@@ -184,10 +184,15 @@ func (h *handlerImpl) InspectShard(ctx context.Context, request *types.GetShardO
 	}, nil
 }
 
-// isShardDrained returns true if the shard is currently in the drained list for the namespace.
-// Errors from the storage layer are wrapped as InternalServiceError. This is called from
-// the GetShardOwner hot path so it relies on a single-key point read instead of a prefix scan.
+// isShardDrained returns true if the shard is currently in the drained list
+// for the namespace. The first reference to a namespace lazily warms the
+// store's in-memory cache, so the very first request may take the slow path
+// (a single-key etcd Get); after that, every check is an in-process map
+// lookup. Errors from the storage layer are wrapped as InternalServiceError.
 func (h *handlerImpl) isShardDrained(ctx context.Context, namespace, shardKey string) (bool, error) {
+	if drained, ready := h.storage.IsShardDrainedCached(namespace, shardKey); ready {
+		return drained, nil
+	}
 	drained, err := h.storage.GetDrainedShard(ctx, namespace, shardKey)
 	if err != nil {
 		return false, &types.InternalServiceError{Message: fmt.Sprintf("failed to read drained shard: %v", err)}
@@ -349,39 +354,79 @@ func (h *handlerImpl) ListNamespaces(_ context.Context, _ *types.ListNamespacesR
 func (h *handlerImpl) WatchNamespaceState(request *types.WatchNamespaceStateRequest, server WatchNamespaceStateServer) error {
 	h.startWG.Wait()
 
-	// Subscribe to state changes from storage
-	assignmentChangesChan, unSubscribe, err := h.storage.SubscribeToAssignmentChanges(server.Context(), request.Namespace)
-	defer unSubscribe()
+	ctx := server.Context()
+
+	// Subscribe to state changes from storage. We need both the executor
+	// assignment stream and the drained-shards stream so spectators get a
+	// single, consistent view per push and can short-circuit drained-shard
+	// requests locally.
+	assignmentCh, unsubAssignments, err := h.storage.SubscribeToAssignmentChanges(ctx, request.Namespace)
 	if err != nil {
 		return &types.InternalServiceError{Message: fmt.Sprintf("failed to subscribe to namespace state: %v", err)}
 	}
+	defer unsubAssignments()
 
-	// Stream subsequent updates
+	drainedCh, unsubDrained, err := h.storage.SubscribeToDrainedShardsChanges(ctx, request.Namespace)
+	if err != nil {
+		return &types.InternalServiceError{Message: fmt.Sprintf("failed to subscribe to drained shard changes: %v", err)}
+	}
+	defer unsubDrained()
+
+	// Hold the most recent snapshot from each channel and only start sending
+	// once both initial snapshots have landed. This prevents an early push
+	// that omits drained-shard data, which spectators would otherwise treat
+	// as "nothing drained" while serving cached owners for drained shards.
+	var (
+		latestAssignments map[*store.ShardOwner][]string
+		latestDrained     []string
+		seenAssignments   bool
+		seenDrained       bool
+	)
+
 	for {
 		select {
-		case <-server.Context().Done():
-			return server.Context().Err()
-		case assignmentChanges, ok := <-assignmentChangesChan:
+		case <-ctx.Done():
+			return ctx.Err()
+		case assignments, ok := <-assignmentCh:
 			if !ok {
-				return fmt.Errorf("unexpected close of updates channel")
+				return fmt.Errorf("unexpected close of assignment changes channel")
 			}
-			response := &types.WatchNamespaceStateResponse{
-				Executors: make([]*types.ExecutorShardAssignment, 0, len(assignmentChanges)),
+			latestAssignments = assignments
+			seenAssignments = true
+		case drained, ok := <-drainedCh:
+			if !ok {
+				return fmt.Errorf("unexpected close of drained shards channel")
 			}
-			for executor, shardIDs := range assignmentChanges {
-				response.Executors = append(response.Executors, &types.ExecutorShardAssignment{
-					ExecutorID:     executor.ExecutorID,
-					AssignedShards: WrapShards(shardIDs),
-					Metadata:       executor.Metadata,
-				})
-			}
+			latestDrained = drained
+			seenDrained = true
+		}
 
-			err = server.Send(response)
-			if err != nil {
-				return fmt.Errorf("send response: %w", err)
-			}
+		if !seenAssignments || !seenDrained {
+			continue
+		}
+
+		if err := server.Send(buildWatchNamespaceStateResponse(latestAssignments, latestDrained)); err != nil {
+			return fmt.Errorf("send response: %w", err)
 		}
 	}
+}
+
+func buildWatchNamespaceStateResponse(
+	assignments map[*store.ShardOwner][]string,
+	drained []string,
+) *types.WatchNamespaceStateResponse {
+	response := &types.WatchNamespaceStateResponse{
+		Executors:        make([]*types.ExecutorShardAssignment, 0, len(assignments)),
+		DrainedShardKeys: drained,
+	}
+	for executor, shardIDs := range assignments {
+		response.Executors = append(response.Executors, &types.ExecutorShardAssignment{
+			ExecutorID:     executor.ExecutorID,
+			AssignedShards: WrapShards(shardIDs),
+			Metadata:       executor.Metadata,
+		})
+	}
+	return response
 }
 
 func WrapShards(shardIDs []string) []*types.Shard {
