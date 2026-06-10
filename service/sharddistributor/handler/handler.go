@@ -339,7 +339,7 @@ func (h *handlerImpl) ListNamespaces(_ context.Context, _ *types.ListNamespacesR
 		namespaces = append(namespaces, &types.NamespaceConfig{
 			Name:     ns.Name,
 			Type:     ns.Type,
-			Mode:     ns.Mode,
+			Mode:     "onboarded",
 			ShardNum: ns.ShardNum,
 		})
 	}
