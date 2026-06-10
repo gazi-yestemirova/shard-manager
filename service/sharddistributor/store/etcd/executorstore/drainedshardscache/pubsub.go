@@ -10,10 +10,11 @@ import (
 )
 
 // pubSub fans out drained-shard snapshots to size-1 buffered subscribers.
-// subscribe seeds the initial snapshot under p.mu so it is ordered before
-// any later publish; publish coalesces against the buffer (drain-then-push)
-// so the latest snapshot always wins and slow consumers never get pinned to
-// stale state. Single publisher per namespace (the watch goroutine).
+// subscribe seeds and registers atomically under p.mu (the seed is computed
+// inside the lock, so nothing can change between snapshot and registration);
+// publish coalesces against the buffer (drain-then-push) so the latest
+// snapshot always wins and slow consumers never get pinned to stale state.
+// Single publisher per namespace (the watch goroutine).
 type pubSub struct {
 	mu          sync.RWMutex
 	subscribers map[string]chan []string
@@ -29,14 +30,20 @@ func newPubSub(logger log.Logger, namespace string) *pubSub {
 	}
 }
 
-// subscribe registers a subscriber, seeds it with `initial` under p.mu, and
-// returns the channel plus an idempotent unsubscribe func.
-func (p *pubSub) subscribe(initial []string) (<-chan []string, func()) {
+// subscribe registers a subscriber and returns the channel plus an
+// idempotent unsubscribe func. seedFn is invoked under p.mu - return a
+// non-nil slice to seed the buffer atomically with registration, or nil to
+// register without a seed (the next publish becomes the first message).
+func (p *pubSub) subscribe(seedFn func() []string) (<-chan []string, func()) {
 	ch := make(chan []string, 1)
 	id := uuid.New().String()
 
 	p.mu.Lock()
-	ch <- initial
+	if seedFn != nil {
+		if seed := seedFn(); seed != nil {
+			ch <- seed
+		}
+	}
 	p.subscribers[id] = ch
 	p.mu.Unlock()
 

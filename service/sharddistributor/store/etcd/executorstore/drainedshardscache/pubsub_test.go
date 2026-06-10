@@ -12,13 +12,17 @@ import (
 	"github.com/cadence-workflow/shard-manager/common/log/testlogger"
 )
 
+func seedFromSlice(s []string) func() []string {
+	return func() []string { return s }
+}
+
 func TestPubSub_SubscribeSeedsInitialSnapshot(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	ps := newPubSub(testlogger.New(t), "ns")
 	initial := []string{"shard-1", "shard-2"}
 
-	ch, unsub := ps.subscribe(initial)
+	ch, unsub := ps.subscribe(seedFromSlice(initial))
 	defer unsub()
 
 	select {
@@ -38,7 +42,7 @@ func TestPubSub_PublishCoalescesUnreadInitialSnapshot(t *testing.T) {
 	initial := []string{"shard-init"}
 	updated := []string{"shard-init", "shard-new"}
 
-	ch, unsub := ps.subscribe(initial)
+	ch, unsub := ps.subscribe(seedFromSlice(initial))
 	defer unsub()
 
 	ps.publish(updated)
@@ -55,7 +59,6 @@ func TestPubSub_PublishCoalescesUnreadPublish(t *testing.T) {
 
 	ch, unsub := ps.subscribe(nil)
 	defer unsub()
-	require.Nil(t, <-ch)
 
 	ps.publish([]string{"v1"})
 	ps.publish([]string{"v1", "v2"})
@@ -72,8 +75,6 @@ func TestPubSub_PublishAfterDrainDeliversLatest(t *testing.T) {
 
 	ch, unsub := ps.subscribe(nil)
 	defer unsub()
-
-	require.Nil(t, <-ch)
 
 	ps.publish([]string{"shard-1"})
 	assert.Equal(t, []string{"shard-1"}, <-ch)
@@ -110,9 +111,9 @@ func TestPubSub_MultipleSubscribersEachGetTheirSeed(t *testing.T) {
 
 	ps := newPubSub(testlogger.New(t), "ns")
 
-	chA, unsubA := ps.subscribe([]string{"a-init"})
+	chA, unsubA := ps.subscribe(seedFromSlice([]string{"a-init"}))
 	defer unsubA()
-	chB, unsubB := ps.subscribe([]string{"b-init"})
+	chB, unsubB := ps.subscribe(seedFromSlice([]string{"b-init"}))
 	defer unsubB()
 
 	assert.Equal(t, []string{"a-init"}, <-chA)
@@ -123,14 +124,32 @@ func TestPubSub_MultipleSubscribersEachGetTheirSeed(t *testing.T) {
 	assert.Equal(t, []string{"shared"}, <-chB)
 }
 
+// Subscribing with a nil seedFn registers without an initial value; the
+// channel only receives subsequent publishes.
+func TestPubSub_SubscribeWithoutSeed(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	ps := newPubSub(testlogger.New(t), "ns")
+
+	ch, unsub := ps.subscribe(nil)
+	defer unsub()
+
+	select {
+	case <-ch:
+		t.Fatal("expected no initial seed when seedFn is nil")
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	ps.publish([]string{"first"})
+	assert.Equal(t, []string{"first"}, <-ch)
+}
+
 func TestPubSub_UnsubscribeIsIdempotent(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	ps := newPubSub(testlogger.New(t), "ns")
 
 	ch, unsub := ps.subscribe(nil)
-
-	require.Nil(t, <-ch)
 
 	unsub()
 	_, ok := <-ch
@@ -154,7 +173,7 @@ func TestPubSub_ConcurrentSubscribePublishDoesNotDeadlock(t *testing.T) {
 	for i := 0; i < subscribers; i++ {
 		go func() {
 			defer wg.Done()
-			ch, unsub := ps.subscribe([]string{"init"})
+			ch, unsub := ps.subscribe(seedFromSlice([]string{"init"}))
 			defer unsub()
 			select {
 			case <-ch:
