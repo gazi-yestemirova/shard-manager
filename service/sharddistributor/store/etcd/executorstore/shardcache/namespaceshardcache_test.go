@@ -856,3 +856,37 @@ func TestNamespaceShardToExecutor_GetExecutorStatistics_SingleFlightDedup(t *tes
 		assert.Equal(t, stats, results[i])
 	}
 }
+
+// A hung etcd Get must not hold the singleflight key forever: the bounded
+// refresh context must time out, surface DeadlineExceeded to waiters, and
+// release the flight so the next caller can trigger a fresh Get.
+func TestNamespaceShardToExecutor_GetShardOwner_RefreshContextHasBoundedTimeout(t *testing.T) {
+	tc := setupNamespaceShardToExecutorTestCase(t)
+	defer tc.ctrl.Finish()
+	defer close(tc.stopCh)
+	tc.e.refreshTimeout = 50 * time.Millisecond
+
+	var getCalls atomic.Int32
+	tc.etcdClient.EXPECT().
+		Get(gomock.Any(), tc.executorPrefix, gomock.Any()).
+		DoAndReturn(func(ctx context.Context, _ string, _ ...clientv3.OpOption) (*clientv3.GetResponse, error) {
+			getCalls.Add(1)
+			<-ctx.Done()
+			return nil, ctx.Err()
+		}).
+		AnyTimes()
+
+	// Use a generous caller deadline so the timeout we observe must come from
+	// the refresh's own bounded context, not the caller's.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := tc.e.GetShardOwner(ctx, "shard-1")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.EqualValues(t, 1, getCalls.Load())
+
+	// Flight must be released so the next caller triggers a fresh Get.
+	_, err = tc.e.GetShardOwner(ctx, "shard-1")
+	require.Error(t, err)
+	assert.EqualValues(t, 2, getCalls.Load(), "second caller should trigger a new Get, not join the previous flight")
+}

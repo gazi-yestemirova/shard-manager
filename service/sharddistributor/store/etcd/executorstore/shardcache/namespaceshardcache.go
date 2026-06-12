@@ -30,6 +30,12 @@ const (
 	// refreshSingleFlightKey is the shared singleflight key for cache-miss
 	// triggered full refreshes.
 	refreshSingleFlightKey = "refresh"
+
+	// refreshOperationTimeout caps how long a singleflighted refresh / stats
+	// fetch can keep the singleflight key occupied. The etcd client config
+	// only sets DialTimeout, so without this bound a hung Get would block
+	// every joiner indefinitely (until stopCh closes).
+	refreshOperationTimeout = 5 * time.Second
 )
 
 type namespaceShardToExecutor struct {
@@ -54,6 +60,9 @@ type namespaceShardToExecutor struct {
 	refreshSF singleflight.Group
 	// statsSF deduplicates concurrent per-executor statistics cache misses.
 	statsSF singleflight.Group
+	// refreshTimeout bounds an in-flight refresh / stats fetch; defaults to
+	// refreshOperationTimeout.
+	refreshTimeout time.Duration
 
 	executorStatistics *namespaceExecutorStatistics
 }
@@ -84,6 +93,7 @@ func newNamespaceShardToExecutor(etcdPrefix, namespace string, client etcdclient
 		pubSub:             newExecutorStatePubSub(logger, namespace),
 		executorStatistics: newNamespaceExecutorStatistics(),
 		metricsClient:      metricsClient,
+		refreshTimeout:     refreshOperationTimeout,
 	}, nil
 }
 
@@ -523,10 +533,13 @@ func (n *namespaceShardToExecutor) refreshSingleFlight(ctx context.Context) erro
 	}
 }
 
-// lifecycleContext returns a context canceled when stopCh closes, suitable
-// for work shared across callers via singleflight.
+// lifecycleContext returns a context canceled when stopCh closes or after
+// refreshOperationTimeout, suitable for work shared across callers via
+// singleflight. The bounded timeout matters: callers' contexts are detached
+// to avoid poisoning the flight, so without it a hung etcd read would keep
+// the singleflight key held forever.
 func (n *namespaceShardToExecutor) lifecycleContext() (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), n.refreshTimeout)
 	stopCh := n.stopCh
 	go func() {
 		select {
