@@ -174,9 +174,9 @@ func (n *namespaceShardToExecutor) getStats(executorID string) (map[string]etcdt
 // and caches them, deduplicating concurrent misses for the same executor.
 func (n *namespaceShardToExecutor) populateExecutorStatisticsCacheOnMiss(ctx context.Context, executorID string) error {
 	ch := n.statsSF.DoChan(executorID, func() (interface{}, error) {
-		refreshCtx, cancel := n.lifecycleContext()
+		fetchCtx, cancel := context.WithTimeout(context.Background(), n.refreshTimeout)
 		defer cancel()
-		return nil, n.fetchAndCacheExecutorStatistics(refreshCtx, executorID)
+		return nil, n.fetchAndCacheExecutorStatistics(fetchCtx, executorID)
 	})
 
 	select {
@@ -516,11 +516,13 @@ func (n *namespaceShardToExecutor) getShardOwnerInMap(ctx context.Context, m *ma
 
 // refreshSingleFlight collapses concurrent cache-miss refreshes into a single
 // etcd read.
-// The refresh uses a lifecycle-scoped context so the winning
-// caller's cancellation does not poison the flight for other waiters.
+// The refresh runs under a fresh background context bounded by
+// refreshTimeout: detached so the leader's cancellation cannot poison the
+// flight for joiners, bounded, so a hung etcd read cannot hold the singleflight
+// key indefinitely.
 func (n *namespaceShardToExecutor) refreshSingleFlight(ctx context.Context) error {
 	ch := n.refreshSF.DoChan(refreshSingleFlightKey, func() (interface{}, error) {
-		refreshCtx, cancel := n.lifecycleContext()
+		refreshCtx, cancel := context.WithTimeout(context.Background(), n.refreshTimeout)
 		defer cancel()
 		return nil, n.refresh(refreshCtx)
 	})
@@ -531,22 +533,4 @@ func (n *namespaceShardToExecutor) refreshSingleFlight(ctx context.Context) erro
 	case res := <-ch:
 		return res.Err
 	}
-}
-
-// lifecycleContext returns a context canceled when stopCh closes or after
-// refreshOperationTimeout, suitable for work shared across callers via
-// singleflight. The bounded timeout matters: callers' contexts are detached
-// to avoid poisoning the flight, so without it a hung etcd read would keep
-// the singleflight key held forever.
-func (n *namespaceShardToExecutor) lifecycleContext() (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithTimeout(context.Background(), n.refreshTimeout)
-	stopCh := n.stopCh
-	go func() {
-		select {
-		case <-stopCh:
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
-	return ctx, cancel
 }
