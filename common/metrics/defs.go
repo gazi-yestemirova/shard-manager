@@ -3094,6 +3094,9 @@ const (
 	// ShardDistributorIsLeader reports whether this instance is currently the leader (1) or not (0) for a namespace
 	ShardDistributorIsLeader
 
+	// ShardDistributorAssignLoopNoActiveExecutors counts rebalance cycles that found no active executors
+	ShardDistributorAssignLoopNoActiveExecutors
+
 	NumShardDistributorMetrics
 )
 
@@ -3926,6 +3929,7 @@ var MetricDefs = map[ServiceIdx]map[MetricIdx]metricDefinition{
 			metricType: Gauge,
 		},
 		ShardDistributorIsLeader: {metricName: "shard_distributor_is_leader", metricType: Gauge},
+		ShardDistributorAssignLoopNoActiveExecutors: {metricName: "shard_distributor_shard_assign_no_active_executors", metricType: Counter},
 	},
 }
 
