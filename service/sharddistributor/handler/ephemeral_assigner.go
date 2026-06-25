@@ -106,12 +106,16 @@ func resolveOwners(state *store.NamespaceState, shardKeys []string) (executorByS
 	return executorByShard, toPlace
 }
 
-// assignedShardOwners flattens the per-executor state into a shardID -> executorID lookup.
-// A pre-existing duplicate resolves to its last writer, which is fine here:
-// the assigner only needs to know the shard is owned, so it adds no new copy.
+// assignedShardOwners flattens the per-executor state into a shardID -> executorID
+// lookup, considering only ACTIVE executors.
+// A pre-existing duplicate resolves to its last writer, which is fine
+// here: the assigner only needs to know the shard is owned, so it adds no new copy.
 func assignedShardOwners(state *store.NamespaceState) map[string]string {
 	owners := make(map[string]string)
 	for executorID, assigned := range state.ShardAssignments {
+		if state.Executors[executorID].Status != types.ExecutorStatusACTIVE {
+			continue
+		}
 		for shardID := range assigned.AssignedShards {
 			owners[shardID] = executorID
 		}

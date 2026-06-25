@@ -191,6 +191,37 @@ func TestAssignEphemeralBatch(t *testing.T) {
 			},
 			expectedOwners: map[string]string{"shard-1": "owner1"},
 		},
+		{
+			// A shard recorded under a non-ACTIVE (e.g. draining) executor
+			// must not be returned as the owner: it is re-placed onto a live
+			// executor so callers are never routed to a drained owner.
+			name:      "ShardOwnedByInactiveExecutorIsRePlacedOntoActive",
+			shardKeys: []string{"shard1"},
+			setupMocks: func(mockStore *store.MockStore) {
+				mockStore.EXPECT().GetState(gomock.Any(), _testNamespaceEphemeral).Return(&store.NamespaceState{
+					Executors: map[string]store.HeartbeatState{
+						"drained-owner": {Status: types.ExecutorStatusDRAINING},
+						"live-owner":    {Status: types.ExecutorStatusACTIVE},
+					},
+					ShardAssignments: map[string]store.AssignedState{
+						"drained-owner": {AssignedShards: map[string]*types.ShardAssignment{
+							"shard1": {Status: types.AssignmentStatusREADY},
+						}},
+					},
+				}, nil)
+				mockStore.EXPECT().AssignShards(gomock.Any(), _testNamespaceEphemeral, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ context.Context, _ string, req store.AssignShardsRequest, _ store.GuardFunc) error {
+						_, ok := req.NewState.ShardAssignments["live-owner"].AssignedShards["shard1"]
+						require.True(t, ok, "shard1 must be re-placed onto the active executor")
+						return nil
+					})
+				mockStore.EXPECT().GetExecutor(gomock.Any(), _testNamespaceEphemeral, "live-owner").Return(&store.ShardOwner{
+					ExecutorID: "live-owner",
+					Metadata:   map[string]string{"ip": "127.0.0.1", "port": "1234"},
+				}, nil)
+			},
+			expectedOwners: map[string]string{"shard1": "live-owner"},
+		},
 	}
 
 	for _, tt := range tests {
