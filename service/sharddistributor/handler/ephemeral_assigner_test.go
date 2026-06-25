@@ -126,6 +126,71 @@ func TestAssignEphemeralBatch(t *testing.T) {
 			expectedError:  true,
 			expectedErrMsg: "plan initial placement: no active executors available",
 		},
+		{
+			// A shard already present in state must not be re-assigned: the
+			// existing owner is returned and AssignShards is never called. This
+			// is the cross-batch / cross-replica guard against duplicate ownership.
+			name:      "AlreadyAssignedShardReturnsExistingOwnerWithoutWrite",
+			shardKeys: []string{"shard1"},
+			setupMocks: func(mockStore *store.MockStore) {
+				mockStore.EXPECT().GetState(gomock.Any(), _testNamespaceEphemeral).Return(&store.NamespaceState{
+					Executors: map[string]store.HeartbeatState{
+						"owner1": {Status: types.ExecutorStatusACTIVE},
+						"owner2": {Status: types.ExecutorStatusACTIVE},
+					},
+					ShardAssignments: map[string]store.AssignedState{
+						"owner2": {AssignedShards: map[string]*types.ShardAssignment{
+							"shard1": {Status: types.AssignmentStatusREADY},
+						}},
+					},
+				}, nil)
+				// No AssignShards expectation: assigning an already-owned shard
+				// would be a duplicate-ownership bug.
+				mockStore.EXPECT().GetExecutor(gomock.Any(), _testNamespaceEphemeral, "owner2").Return(&store.ShardOwner{
+					ExecutorID: "owner2",
+					Metadata:   map[string]string{"ip": "127.0.0.1", "port": "1234"},
+				}, nil)
+			},
+			expectedOwners: map[string]string{"shard1": "owner2"},
+		},
+		{
+			// The same shard key repeated within one batch must be collapsed to a
+			// single placement, otherwise the load balancer fans it out across
+			// several executors.
+			name:      "DuplicateShardKeysInBatchCollapseToSinglePlacement",
+			shardKeys: []string{"shard-1", "shard-1", "shard-1"},
+			setupMocks: func(mockStore *store.MockStore) {
+				mockStore.EXPECT().GetState(gomock.Any(), _testNamespaceEphemeral).Return(&store.NamespaceState{
+					Executors: map[string]store.HeartbeatState{
+						"owner1": {Status: types.ExecutorStatusACTIVE},
+						"owner2": {Status: types.ExecutorStatusACTIVE},
+						"owner3": {Status: types.ExecutorStatusACTIVE},
+						"owner4": {Status: types.ExecutorStatusACTIVE},
+					},
+					ShardAssignments: map[string]store.AssignedState{
+						"owner1": {AssignedShards: map[string]*types.ShardAssignment{}},
+					},
+				}, nil)
+				// AssignShards is expected exactly once; the duplicate keys must
+				// not produce multiple placements / executors.
+				mockStore.EXPECT().AssignShards(gomock.Any(), _testNamespaceEphemeral, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ context.Context, _ string, req store.AssignShardsRequest, _ store.GuardFunc) error {
+						count := 0
+						for _, assigned := range req.NewState.ShardAssignments {
+							if _, ok := assigned.AssignedShards["shard-1"]; ok {
+								count++
+							}
+						}
+						require.Equal(t, 1, count, "shard must be assigned to exactly one executor")
+						return nil
+					})
+				mockStore.EXPECT().GetExecutor(gomock.Any(), _testNamespaceEphemeral, "owner1").Return(&store.ShardOwner{
+					ExecutorID: "owner1",
+					Metadata:   map[string]string{"ip": "127.0.0.1", "port": "1234"},
+				}, nil)
+			},
+			expectedOwners: map[string]string{"shard-1": "owner1"},
+		},
 	}
 
 	for _, tt := range tests {
