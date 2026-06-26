@@ -93,7 +93,7 @@ func (h *handlerImpl) assignEphemeralBatch(ctx context.Context, namespace string
 // their current owner) and those still needing placement.
 // toPlace is a set, so repeated keys collapse, and already-owned shards are never re-placed.
 func resolveOwners(state *store.NamespaceState, shardKeys []string) (executorByShard map[string]string, toPlace map[string]struct{}) {
-	owners := assignedShardOwners(state)
+	owners := state.ActiveShardOwners()
 	executorByShard = make(map[string]string, len(shardKeys))
 	toPlace = make(map[string]struct{}, len(shardKeys))
 	for _, shardKey := range shardKeys {
@@ -104,23 +104,6 @@ func resolveOwners(state *store.NamespaceState, shardKeys []string) (executorByS
 		toPlace[shardKey] = struct{}{}
 	}
 	return executorByShard, toPlace
-}
-
-// assignedShardOwners flattens the per-executor state into a shardID -> executorID
-// lookup, considering only ACTIVE executors.
-// A pre-existing duplicate resolves to its last writer, which is fine
-// here: the assigner only needs to know the shard is owned, so it adds no new copy.
-func assignedShardOwners(state *store.NamespaceState) map[string]string {
-	owners := make(map[string]string)
-	for executorID, assigned := range state.ShardAssignments {
-		if state.Executors[executorID].Status != types.ExecutorStatusACTIVE {
-			continue
-		}
-		for shardID := range assigned.AssignedShards {
-			owners[shardID] = executorID
-		}
-	}
-	return owners
 }
 
 // mergePlacements folds the planned shard→executor placements back into state.
