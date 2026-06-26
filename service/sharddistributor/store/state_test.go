@@ -66,3 +66,61 @@ func TestNamespaceState_CountExecutorsByStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestNamespaceState_ActiveShardOwners(t *testing.T) {
+	ready := func(shards ...string) AssignedState {
+		m := make(map[string]*types.ShardAssignment, len(shards))
+		for _, s := range shards {
+			m[s] = &types.ShardAssignment{Status: types.AssignmentStatusREADY}
+		}
+		return AssignedState{AssignedShards: m}
+	}
+
+	tests := []struct {
+		name             string
+		executors        map[string]HeartbeatState
+		shardAssignments map[string]AssignedState
+		expected         map[string]string
+	}{
+		{
+			name:     "empty state",
+			expected: map[string]string{},
+		},
+		{
+			name: "only active executors are included",
+			executors: map[string]HeartbeatState{
+				"exec-active":   {Status: types.ExecutorStatusACTIVE},
+				"exec-draining": {Status: types.ExecutorStatusDRAINING},
+			},
+			shardAssignments: map[string]AssignedState{
+				"exec-active":   ready("shard-1", "shard-2"),
+				"exec-draining": ready("shard-3"),
+			},
+			expected: map[string]string{
+				"shard-1": "exec-active",
+				"shard-2": "exec-active",
+			},
+		},
+		{
+			name: "assignments for unknown executor are skipped",
+			executors: map[string]HeartbeatState{
+				"exec-1": {Status: types.ExecutorStatusACTIVE},
+			},
+			shardAssignments: map[string]AssignedState{
+				"exec-1":    ready("shard-1"),
+				"exec-gone": ready("shard-2"),
+			},
+			expected: map[string]string{"shard-1": "exec-1"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ns := &NamespaceState{
+				Executors:        tt.executors,
+				ShardAssignments: tt.shardAssignments,
+			}
+			assert.Equal(t, tt.expected, ns.ActiveShardOwners())
+		})
+	}
+}
