@@ -85,6 +85,25 @@ func (h *metricsHandler) GetDrainedShards(ctx context.Context, gp1 *types.GetDra
 	return gp2, err
 }
 
+func (h *metricsHandler) GetExecutorState(ctx context.Context, gp1 *types.GetExecutorStateRequest) (gp2 *types.GetExecutorStateResponse, err error) {
+	defer func() { log.CapturePanic(recover(), h.logger, &err) }()
+
+	scope := h.metricsClient.Scope(metrics.ShardDistributorGetExecutorStateScope)
+	scope = scope.Tagged(metrics.NamespaceTag(gp1.GetNamespace()))
+	scope.IncCounter(metrics.ShardDistributorRequests)
+	sw := scope.StartTimer(metrics.ShardDistributorLatency)
+	defer sw.Stop()
+	logger := h.logger.WithTags(tag.ShardNamespace(gp1.GetNamespace()))
+
+	gp2, err = h.handler.GetExecutorState(ctx, gp1)
+
+	if err != nil {
+		handleErr(err, scope, logger)
+	}
+
+	return gp2, err
+}
+
 func (h *metricsHandler) GetNamespaceState(ctx context.Context, gp1 *types.GetNamespaceStateRequest) (gp2 *types.GetNamespaceStateResponse, err error) {
 	defer func() { log.CapturePanic(recover(), h.logger, &err) }()
 

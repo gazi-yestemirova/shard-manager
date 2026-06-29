@@ -105,6 +105,44 @@ func (v *GetNamespaceStateResponse) GetExecutors() (o []*NamespaceExecutorState)
 	return
 }
 
+type GetExecutorStateRequest struct {
+	Namespace  string
+	ExecutorID string
+}
+
+func (v *GetExecutorStateRequest) GetNamespace() (o string) {
+	if v != nil {
+		return v.Namespace
+	}
+	return
+}
+
+func (v *GetExecutorStateRequest) GetExecutorID() (o string) {
+	if v != nil {
+		return v.ExecutorID
+	}
+	return
+}
+
+type GetExecutorStateResponse struct {
+	Namespace string
+	Executor  *NamespaceExecutorState
+}
+
+func (v *GetExecutorStateResponse) GetNamespace() (o string) {
+	if v != nil {
+		return v.Namespace
+	}
+	return
+}
+
+func (v *GetExecutorStateResponse) GetExecutor() (o *NamespaceExecutorState) {
+	if v != nil {
+		return v.Executor
+	}
+	return
+}
+
 type NamespaceExecutorState struct {
 	ExecutorID     string
 	Status         ExecutorStatus

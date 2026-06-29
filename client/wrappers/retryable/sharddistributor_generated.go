@@ -64,6 +64,17 @@ func (c *sharddistributorClient) GetDrainedShards(ctx context.Context, gp1 *type
 	return resp, err
 }
 
+func (c *sharddistributorClient) GetExecutorState(ctx context.Context, gp1 *types.GetExecutorStateRequest, p1 ...yarpc.CallOption) (gp2 *types.GetExecutorStateResponse, err error) {
+	var resp *types.GetExecutorStateResponse
+	op := func(ctx context.Context) error {
+		var err error
+		resp, err = c.client.GetExecutorState(ctx, gp1, p1...)
+		return err
+	}
+	err = c.throttleRetry.Do(ctx, op)
+	return resp, err
+}
+
 func (c *sharddistributorClient) GetNamespaceState(ctx context.Context, gp1 *types.GetNamespaceStateRequest, p1 ...yarpc.CallOption) (gp2 *types.GetNamespaceStateResponse, err error) {
 	var resp *types.GetNamespaceStateResponse
 	op := func(ctx context.Context) error {

@@ -41,6 +41,9 @@ service ShardDistributorAPI {
   // GetNamespaceState returns a snapshot of all executors in a namespace and their assigned shards
   rpc GetNamespaceState(GetNamespaceStateRequest) returns (GetNamespaceStateResponse);
 
+  // GetExecutorState returns the state of an executor within a namespace, looked up by executor id
+  rpc GetExecutorState(GetExecutorStateRequest) returns (GetExecutorStateResponse);
+
   // WatchNamespaceState streams updates about executors and their assigned shards for a namespace
   rpc WatchNamespaceState(WatchNamespaceStateRequest) returns (stream WatchNamespaceStateResponse);
 
@@ -128,6 +131,16 @@ message AssignedShardState {
   AssignmentStatus assignment_status = 2;
   // Mod revision of the executor's assigned_state etcd key when this snapshot was read.
   int64 assigned_state_mod_revision = 3;
+}
+
+message GetExecutorStateRequest {
+  string namespace = 1;
+  string executor_id = 2;
+}
+
+message GetExecutorStateResponse {
+  string namespace = 1;
+  NamespaceExecutorState executor = 2;
 }
 
 message WatchNamespaceStateRequest {
