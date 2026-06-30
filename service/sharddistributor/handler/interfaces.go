@@ -47,6 +47,8 @@ type Handler interface {
 
 	GetNamespaceState(context.Context, *types.GetNamespaceStateRequest) (*types.GetNamespaceStateResponse, error)
 
+	GetExecutorState(context.Context, *types.GetExecutorStateRequest) (*types.GetExecutorStateResponse, error)
+
 	WatchNamespaceState(*types.WatchNamespaceStateRequest, WatchNamespaceStateServer) error
 
 	ListNamespaces(context.Context, *types.ListNamespacesRequest) (*types.ListNamespacesResponse, error)

@@ -104,6 +104,58 @@ func TestAccessControlledHandler_GetNamespaceState(t *testing.T) {
 	}
 }
 
+func TestAccessControlledHandler_GetExecutorState(t *testing.T) {
+	tests := []struct {
+		name              string
+		authorizeResult   authorization.Result
+		authorizeErr      error
+		expectInnerCalled bool
+		expectErr         error
+	}{
+		{name: "allow -> inner called", authorizeResult: authorization.Result{Decision: authorization.DecisionAllow}, expectInnerCalled: true},
+		{name: "deny -> AccessDeniedError", authorizeResult: authorization.Result{Decision: authorization.DecisionDeny}, expectErr: errUnauthorized},
+		{name: "authorizer error -> propagated", authorizeErr: errAuthorizerBoom, expectErr: errAuthorizerBoom},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			inner := handler.NewMockHandler(ctrl)
+			authz := authorization.NewMockAuthorizer(ctrl)
+
+			authz.EXPECT().
+				Authorize(gomock.Any(), &authorization.Attributes{
+					APIName:    "GetExecutorState",
+					Namespace:  testNamespace,
+					Permission: authorization.PermissionRead,
+				}).
+				Return(tc.authorizeResult, tc.authorizeErr).
+				Times(1)
+
+			if tc.expectInnerCalled {
+				inner.EXPECT().
+					GetExecutorState(gomock.Any(), &types.GetExecutorStateRequest{Namespace: testNamespace, ExecutorID: "executor1"}).
+					Return(&types.GetExecutorStateResponse{Namespace: testNamespace}, nil).
+					Times(1)
+			}
+
+			resp, err := NewHandler(inner, authz).GetExecutorState(
+				context.Background(),
+				&types.GetExecutorStateRequest{Namespace: testNamespace, ExecutorID: "executor1"},
+			)
+
+			if tc.expectErr != nil {
+				assert.Nil(t, resp)
+				assert.ErrorIs(t, err, tc.expectErr)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, resp)
+			assert.Equal(t, testNamespace, resp.Namespace)
+		})
+	}
+}
+
 func TestAccessControlledHandler_NopDefaults(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	inner := handler.NewMockHandler(ctrl)

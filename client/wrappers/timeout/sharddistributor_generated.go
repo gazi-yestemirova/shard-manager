@@ -51,6 +51,12 @@ func (c *sharddistributorClient) GetDrainedShards(ctx context.Context, gp1 *type
 	return c.client.GetDrainedShards(ctx, gp1, p1...)
 }
 
+func (c *sharddistributorClient) GetExecutorState(ctx context.Context, gp1 *types.GetExecutorStateRequest, p1 ...yarpc.CallOption) (gp2 *types.GetExecutorStateResponse, err error) {
+	ctx, cancel := createContext(ctx, c.timeout)
+	defer cancel()
+	return c.client.GetExecutorState(ctx, gp1, p1...)
+}
+
 func (c *sharddistributorClient) GetNamespaceState(ctx context.Context, gp1 *types.GetNamespaceStateRequest, p1 ...yarpc.CallOption) (gp2 *types.GetNamespaceStateResponse, err error) {
 	ctx, cancel := createContext(ctx, c.timeout)
 	defer cancel()

@@ -93,6 +93,18 @@ func TestFromShardDistributorGetNamespaceStateResponse(t *testing.T) {
 	}
 }
 
+func TestFromShardDistributorGetExecutorStateRequest(t *testing.T) {
+	for _, item := range []*types.GetExecutorStateRequest{nil, {}, &testdata.ShardDistributorGetExecutorStateRequest} {
+		assert.Equal(t, item, ToShardDistributorGetExecutorStateRequest(FromShardDistributorGetExecutorStateRequest(item)))
+	}
+}
+
+func TestFromShardDistributorGetExecutorStateResponse(t *testing.T) {
+	for _, item := range []*types.GetExecutorStateResponse{nil, {}, &testdata.ShardDistributorGetExecutorStateResponse} {
+		assert.Equal(t, item, ToShardDistributorGetExecutorStateResponse(FromShardDistributorGetExecutorStateResponse(item)))
+	}
+}
+
 func TestFromShardDistributorListNamespacesRequest(t *testing.T) {
 	for _, item := range []*types.ListNamespacesRequest{nil, {}, &testdata.ShardDistributorListNamespacesRequest} {
 		assert.Equal(t, item, ToShardDistributorListNamespacesRequest(FromShardDistributorListNamespacesRequest(item)))
@@ -206,6 +218,22 @@ func GetNamespaceStateResponseFuzzer(r *types.GetNamespaceStateResponse, c fuzz.
 	}
 }
 
+// GetExecutorStateResponseFuzzer avoids nil slices/elements for protobuf repeated fields.
+func GetExecutorStateResponseFuzzer(r *types.GetExecutorStateResponse, c fuzz.Continue) {
+	c.FuzzNoCustom(r)
+	if r.Executor == nil {
+		return
+	}
+	if r.Executor.AssignedShards == nil {
+		r.Executor.AssignedShards = []*types.ExecutorAssignedShardState{}
+	}
+	for j, sh := range r.Executor.AssignedShards {
+		if sh == nil {
+			r.Executor.AssignedShards[j] = &types.ExecutorAssignedShardState{}
+		}
+	}
+}
+
 func TestGetShardOwnerRequestFuzz(t *testing.T) {
 	testutils.RunMapperFuzzTest(t, FromShardDistributorGetShardOwnerRequest, ToShardDistributorGetShardOwnerRequest)
 }
@@ -236,6 +264,20 @@ func TestWatchNamespaceStateResponseFuzz(t *testing.T) {
 
 func TestGetNamespaceStateRequestFuzz(t *testing.T) {
 	testutils.RunMapperFuzzTest(t, FromShardDistributorGetNamespaceStateRequest, ToShardDistributorGetNamespaceStateRequest)
+}
+
+func TestGetExecutorStateRequestFuzz(t *testing.T) {
+	testutils.RunMapperFuzzTest(t, FromShardDistributorGetExecutorStateRequest, ToShardDistributorGetExecutorStateRequest)
+}
+
+func TestGetExecutorStateResponseFuzz(t *testing.T) {
+	testutils.RunMapperFuzzTest(t, FromShardDistributorGetExecutorStateResponse, ToShardDistributorGetExecutorStateResponse,
+		testutils.WithCustomFuncs(
+			ExecutorStatusFuzzer,
+			AssignmentStatusFuzzer,
+			GetExecutorStateResponseFuzzer,
+		),
+	)
 }
 
 func TestGetNamespaceStateResponseFuzz(t *testing.T) {

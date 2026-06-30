@@ -682,6 +682,140 @@ func TestGetNamespaceState_heartbeatWithoutAssignments(t *testing.T) {
 	require.Empty(t, ex.AssignedShards)
 }
 
+func TestGetExecutorState(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
+		},
+	}
+
+	tests := []struct {
+		name            string
+		request         *types.GetExecutorStateRequest
+		setupMocks      func(*store.MockStore)
+		wantErrContains string
+	}{
+		{
+			name:            "unknown_namespace",
+			request:         &types.GetExecutorStateRequest{Namespace: "missing", ExecutorID: "executor1"},
+			wantErrContains: "namespace not found",
+		},
+		{
+			name:    "executor_not_found",
+			request: &types.GetExecutorStateRequest{Namespace: _testNamespaceFixed, ExecutorID: "executor1"},
+			setupMocks: func(m *store.MockStore) {
+				m.EXPECT().GetHeartbeat(gomock.Any(), _testNamespaceFixed, "executor1").
+					Return(nil, nil, store.ErrExecutorNotFound)
+			},
+			wantErrContains: "executor not found",
+		},
+		{
+			name:    "get_heartbeat_error",
+			request: &types.GetExecutorStateRequest{Namespace: _testNamespaceFixed, ExecutorID: "executor1"},
+			setupMocks: func(m *store.MockStore) {
+				m.EXPECT().GetHeartbeat(gomock.Any(), _testNamespaceFixed, "executor1").
+					Return(nil, nil, errors.New("etcd is down"))
+			},
+			wantErrContains: "failed to get executor state",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockStorage := store.NewMockStore(ctrl)
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockStorage)
+			}
+			h := newTestHandler(t, cfg, mockStorage)
+			resp, err := h.GetExecutorState(context.Background(), tt.request)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tt.wantErrContains)
+			require.Nil(t, resp)
+		})
+	}
+}
+
+func TestGetExecutorState_success(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
+		},
+	}
+	now := time.Unix(1000, 0).UTC()
+
+	ctrl := gomock.NewController(t)
+	mockStorage := store.NewMockStore(ctrl)
+	mockStorage.EXPECT().GetHeartbeat(gomock.Any(), _testNamespaceFixed, "executor1").Return(
+		&store.HeartbeatState{
+			Status:        types.ExecutorStatusACTIVE,
+			LastHeartbeat: now,
+			Metadata:      map[string]string{"ip": "127.0.0.1", "port": "1234"},
+		},
+		&store.AssignedState{
+			AssignedShards: map[string]*types.ShardAssignment{
+				"shard1": {Status: types.AssignmentStatusREADY},
+				"shard2": nil,
+			},
+			ModRevision: 42,
+		},
+		nil,
+	)
+
+	h := newTestHandler(t, cfg, mockStorage)
+	resp, err := h.GetExecutorState(context.Background(), &types.GetExecutorStateRequest{
+		Namespace:  _testNamespaceFixed,
+		ExecutorID: "executor1",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, _testNamespaceFixed, resp.Namespace)
+	require.NotNil(t, resp.Executor)
+	require.Equal(t, "executor1", resp.Executor.ExecutorID)
+	require.Equal(t, types.ExecutorStatusACTIVE, resp.Executor.Status)
+	require.Equal(t, now, resp.Executor.LastHeartbeat)
+	require.Equal(t, map[string]string{"ip": "127.0.0.1", "port": "1234"}, resp.Executor.Metadata)
+	require.Len(t, resp.Executor.AssignedShards, 2)
+
+	byKey := make(map[string]*types.ExecutorAssignedShardState, len(resp.Executor.AssignedShards))
+	for _, sh := range resp.Executor.AssignedShards {
+		byKey[sh.ShardKey] = sh
+		require.Equal(t, int64(42), sh.AssignedStateModRevision)
+	}
+	require.Equal(t, types.AssignmentStatusREADY, byKey["shard1"].AssignmentStatus)
+	require.Equal(t, types.AssignmentStatusINVALID, byKey["shard2"].AssignmentStatus)
+}
+
+func TestGetExecutorState_noAssignedState(t *testing.T) {
+	cfg := config.ShardDistribution{
+		Namespaces: []config.Namespace{
+			{Name: _testNamespaceFixed, Type: config.NamespaceTypeFixed, ShardNum: 32},
+		},
+	}
+	now := time.Unix(1000, 0).UTC()
+
+	ctrl := gomock.NewController(t)
+	mockStorage := store.NewMockStore(ctrl)
+	mockStorage.EXPECT().GetHeartbeat(gomock.Any(), _testNamespaceFixed, "executor1").Return(
+		&store.HeartbeatState{
+			Status:        types.ExecutorStatusDRAINING,
+			LastHeartbeat: now,
+		},
+		nil,
+		nil,
+	)
+
+	h := newTestHandler(t, cfg, mockStorage)
+	resp, err := h.GetExecutorState(context.Background(), &types.GetExecutorStateRequest{
+		Namespace:  _testNamespaceFixed,
+		ExecutorID: "executor1",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp.Executor)
+	require.Equal(t, types.ExecutorStatusDRAINING, resp.Executor.Status)
+	require.Empty(t, resp.Executor.AssignedShards)
+}
+
 func TestListNamespaces(t *testing.T) {
 	tests := []struct {
 		name string
