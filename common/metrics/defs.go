@@ -899,6 +899,9 @@ const (
 	// ShardDistributorClientGetNamespaceStateScope tracks GetNamespaceState calls made by service to shard distributor
 	ShardDistributorClientGetNamespaceStateScope
 
+	// ShardDistributorClientGetExecutorStateScope tracks GetExecutorState calls made by service to shard distributor
+	ShardDistributorClientGetExecutorStateScope
+
 	// ShardDistributorClientListNamespacesScope tracks ListNamespaces calls made by service to shard distributor
 	ShardDistributorClientListNamespacesScope
 
@@ -1495,6 +1498,7 @@ const (
 	// ShardDistributorGetShardOwnerScope tracks GetShardOwner API calls received by service
 	ShardDistributorGetShardOwnerScope = iota + NumWorkerScopes
 	ShardDistributorGetNamespaceStateScope
+	ShardDistributorGetExecutorStateScope
 	ShardDistributorListNamespacesScope
 	ShardDistributorWatchNamespaceStateScope
 	ShardDistributorHeartbeatScope
@@ -1919,6 +1923,7 @@ var ScopeDefs = map[ServiceIdx]map[ScopeIdx]scopeDefinition{
 
 		ShardDistributorClientGetShardOwnerScope:       {operation: "ShardDistributorClientGetShardOwner"},
 		ShardDistributorClientGetNamespaceStateScope:   {operation: "ShardDistributorClientGetNamespaceState"},
+		ShardDistributorClientGetExecutorStateScope:    {operation: "ShardDistributorClientGetExecutorState"},
 		ShardDistributorClientListNamespacesScope:      {operation: "ShardDistributorClientListNamespaces"},
 		ShardDistributorClientWatchNamespaceStateScope: {operation: "ShardDistributorClientWatchNamespaceState"},
 		ShardDistributorClientInspectShardScope:        {operation: "ShardDistributorClientInspectShard"},
@@ -2212,6 +2217,7 @@ var ScopeDefs = map[ServiceIdx]map[ScopeIdx]scopeDefinition{
 	ShardDistributor: {
 		ShardDistributorGetShardOwnerScope:                         {operation: "GetShardOwner"},
 		ShardDistributorGetNamespaceStateScope:                     {operation: "GetNamespaceState"},
+		ShardDistributorGetExecutorStateScope:                      {operation: "GetExecutorState"},
 		ShardDistributorListNamespacesScope:                        {operation: "ListNamespaces"},
 		ShardDistributorWatchNamespaceStateScope:                   {operation: "WatchNamespaceState"},
 		ShardDistributorHeartbeatScope:                             {operation: "ExecutorHeartbeat"},

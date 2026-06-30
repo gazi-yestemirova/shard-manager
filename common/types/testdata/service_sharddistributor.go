@@ -101,6 +101,22 @@ var (
 			},
 		},
 	}
+	ShardDistributorGetExecutorStateRequest = types.GetExecutorStateRequest{
+		Namespace:  "namespace",
+		ExecutorID: "executor-1",
+	}
+	ShardDistributorGetExecutorStateResponse = types.GetExecutorStateResponse{
+		Namespace: "namespace",
+		Executor: &types.NamespaceExecutorState{
+			ExecutorID:    "executor-1",
+			Status:        types.ExecutorStatusACTIVE,
+			LastHeartbeat: time.Date(2024, 1, 2, 3, 4, 5, 6, time.UTC),
+			Metadata:      map[string]string{"k": "v"},
+			AssignedShards: []*types.ExecutorAssignedShardState{
+				{ShardKey: "a", AssignmentStatus: types.AssignmentStatusREADY, AssignedStateModRevision: 7},
+			},
+		},
+	}
 	ShardDistributorListNamespacesRequest  = types.ListNamespacesRequest{}
 	ShardDistributorListNamespacesResponse = types.ListNamespacesResponse{
 		Namespaces: []*types.NamespaceConfig{

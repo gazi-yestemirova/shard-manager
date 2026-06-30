@@ -279,6 +279,59 @@ func (h *handlerImpl) GetNamespaceState(ctx context.Context, request *types.GetN
 	}, nil
 }
 
+// GetExecutorState looks up a single executor within a namespace by executor id
+func (h *handlerImpl) GetExecutorState(ctx context.Context, request *types.GetExecutorStateRequest) (resp *types.GetExecutorStateResponse, retError error) {
+	defer func() { log.CapturePanic(recover(), h.logger, &retError) }()
+
+	h.startWG.Wait()
+
+	namespaceIdx := slices.IndexFunc(h.shardDistributionCfg.Namespaces, func(namespace config.Namespace) bool {
+		return namespace.Name == request.GetNamespace()
+	})
+	if namespaceIdx == -1 {
+		return nil, &types.NamespaceNotFoundError{
+			Namespace: request.GetNamespace(),
+		}
+	}
+
+	heartbeatState, assignedState, err := h.storage.GetHeartbeat(ctx, request.GetNamespace(), request.GetExecutorID())
+	if errors.Is(err, store.ErrExecutorNotFound) {
+		return nil, &types.EntityNotExistsError{
+			Message: fmt.Sprintf("executor not found %v:%v", request.GetNamespace(), request.GetExecutorID()),
+		}
+	}
+	if err != nil {
+		return nil, &types.InternalServiceError{Message: fmt.Sprintf("failed to get executor state: %v", err)}
+	}
+
+	assignedShards := make([]*types.ExecutorAssignedShardState, 0)
+	if assignedState != nil {
+		assignedShards = make([]*types.ExecutorAssignedShardState, 0, len(assignedState.AssignedShards))
+		for shardKey, shardAssignment := range assignedState.AssignedShards {
+			status := types.AssignmentStatusINVALID
+			if shardAssignment != nil {
+				status = shardAssignment.Status
+			}
+			assignedShards = append(assignedShards, &types.ExecutorAssignedShardState{
+				ShardKey:                 shardKey,
+				AssignmentStatus:         status,
+				AssignedStateModRevision: assignedState.ModRevision,
+			})
+		}
+	}
+
+	return &types.GetExecutorStateResponse{
+		Namespace: request.GetNamespace(),
+		Executor: &types.NamespaceExecutorState{
+			ExecutorID:     request.GetExecutorID(),
+			Status:         heartbeatState.Status,
+			LastHeartbeat:  heartbeatState.LastHeartbeat,
+			Metadata:       heartbeatState.Metadata,
+			AssignedShards: assignedShards,
+		},
+	}, nil
+}
+
 // ForceResetNamespace deletes every key under the namespace prefix in storage.
 // The namespace must be present in the static service config; the call fails
 // fast with NamespaceNotFoundError otherwise

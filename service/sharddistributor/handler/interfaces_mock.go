@@ -87,6 +87,21 @@ func (mr *MockHandlerMockRecorder) GetDrainedShards(arg0, arg1 any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDrainedShards", reflect.TypeOf((*MockHandler)(nil).GetDrainedShards), arg0, arg1)
 }
 
+// GetExecutorState mocks base method.
+func (m *MockHandler) GetExecutorState(arg0 context.Context, arg1 *types.GetExecutorStateRequest) (*types.GetExecutorStateResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetExecutorState", arg0, arg1)
+	ret0, _ := ret[0].(*types.GetExecutorStateResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetExecutorState indicates an expected call of GetExecutorState.
+func (mr *MockHandlerMockRecorder) GetExecutorState(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExecutorState", reflect.TypeOf((*MockHandler)(nil).GetExecutorState), arg0, arg1)
+}
+
 // GetNamespaceState mocks base method.
 func (m *MockHandler) GetNamespaceState(arg0 context.Context, arg1 *types.GetNamespaceStateRequest) (*types.GetNamespaceStateResponse, error) {
 	m.ctrl.T.Helper()
