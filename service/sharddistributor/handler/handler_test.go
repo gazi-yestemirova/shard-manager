@@ -37,6 +37,7 @@ import (
 	"github.com/cadence-workflow/shard-manager/common/log/testlogger"
 	"github.com/cadence-workflow/shard-manager/common/types"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/config"
+	"github.com/cadence-workflow/shard-manager/service/sharddistributor/ephemeralassigner"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/store"
 )
 
@@ -45,21 +46,23 @@ const (
 	_testNamespaceEphemeral = "test-ephemeral"
 )
 
-// newTestHandler creates a handlerImpl wired with a real shardBatcher backed by
-// the provided store mock. The batcher is started and the handler is returned
+// newTestHandler creates a handlerImpl wired with a real ephemeral Assigner backed
+// by the provided store mock. The assigner is started and the handler is returned
 // ready to use; callers should call Stop() when done.
 func newTestHandler(t *testing.T, cfg config.ShardDistribution, mockStore *store.MockStore) *handlerImpl {
 	t.Helper()
+	timeSource := clock.NewRealTimeSource()
+	distributorCfg := newTestShardDistributorConfig(config.LoadBalancingModeNAIVE)
 	handler := &handlerImpl{
 		logger:               testlogger.New(t),
 		shardDistributionCfg: cfg,
-		cfg:                  newTestShardDistributorConfig(config.LoadBalancingModeNAIVE),
+		cfg:                  distributorCfg,
 		storage:              mockStore,
-		timeSource:           clock.NewRealTimeSource(),
+		timeSource:           timeSource,
 	}
-	handler.batcher = newShardBatcher(clock.NewRealTimeSource(), 10*time.Millisecond, handler.assignEphemeralBatch)
-	handler.batcher.Start()
-	t.Cleanup(handler.batcher.Stop)
+	handler.ephemeralAssigner = ephemeralassigner.New(testlogger.New(t), timeSource, distributorCfg, mockStore, 10*time.Millisecond)
+	handler.ephemeralAssigner.Start()
+	t.Cleanup(handler.ephemeralAssigner.Stop)
 	return handler
 }
 
@@ -158,9 +161,9 @@ func TestGetShardOwner(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			// ShardNotFound for an ephemeral namespace routes to the batcher, which
-			// calls assignEphemeralBatch. This case validates the routing only;
-			// detailed assignment behaviour is covered in TestAssignEphemeralBatch.
+			// ShardNotFound for an ephemeral namespace routes to the ephemeral
+			// assigner. This case validates the routing only; detailed assignment
+			// behaviour is covered in the ephemeralassigner package tests.
 			name: "ShardNotFound_Ephemeral_RoutesToBatcher",
 			request: &types.GetShardOwnerRequest{
 				Namespace: _testNamespaceEphemeral,
@@ -182,11 +185,11 @@ func TestGetShardOwner(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			// A version conflict from AssignShards causes the batcher to return
-			// ErrVersionConflict. getOrAssignEphemeralShard re-reads storage on
-			// retry; here the concurrent winner has already written the assignment
-			// so the second GetShardOwner call succeeds and no second batcher
-			// submission is required.
+			// A version conflict from AssignShards causes the assigner to return
+			// ErrVersionConflict. Assigner.GetOrAssign re-reads storage on retry;
+			// here the concurrent winner has already written the assignment so the
+			// second GetShardOwner call succeeds and no second batcher submission is
+			// required.
 			name: "Ephemeral_VersionConflict_ResolvedByStorageRead",
 			request: &types.GetShardOwnerRequest{
 				Namespace: _testNamespaceEphemeral,

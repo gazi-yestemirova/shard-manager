@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cadence-workflow/shard-manager/common/metrics"
+	"github.com/cadence-workflow/shard-manager/common/types"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/config"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/loadbalancer/plan"
 	"github.com/cadence-workflow/shard-manager/service/sharddistributor/store"
@@ -52,6 +53,26 @@ func TestPlanInitialPlacement_NoActiveExecutors(t *testing.T) {
 
 	_, err := PlanInitialPlacement(cfg, "test-namespace", &store.NamespaceState{}, []string{"shard-1"})
 	assert.True(t, errors.Is(err, plan.ErrNoActiveExecutors))
+}
+
+func TestPlanInitialPlacement_DeduplicatesShardIDs(t *testing.T) {
+	cfg := &config.Config{
+		LoadBalancingMode: func(namespace string) string {
+			return config.LoadBalancingModeNAIVE
+		},
+	}
+	state := &store.NamespaceState{
+		Executors: map[string]store.HeartbeatState{
+			"exec-1": {Status: types.ExecutorStatusACTIVE},
+			"exec-2": {Status: types.ExecutorStatusACTIVE},
+		},
+	}
+
+	placements, err := PlanInitialPlacement(cfg, "test-namespace", state, []string{"shard-1", "shard-1", "shard-1"})
+	require.NoError(t, err)
+
+	require.Len(t, placements, 1, "a repeated shard ID must yield exactly one placement")
+	assert.Equal(t, "shard-1", placements[0].ShardID)
 }
 
 func TestPlanRebalance(t *testing.T) {
