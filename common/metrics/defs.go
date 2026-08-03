@@ -3936,7 +3936,7 @@ var MetricDefs = map[ServiceIdx]map[MetricIdx]metricDefinition{
 			metricName: "shard_distributor_assignment_smoothed_load_missing_ratio",
 			metricType: Gauge,
 		},
-		ShardDistributorIsLeader: {metricName: "shard_distributor_is_leader", metricType: Gauge},
+		ShardDistributorIsLeader:                    {metricName: "shard_distributor_is_leader", metricType: Gauge},
 		ShardDistributorAssignLoopNoActiveExecutors: {metricName: "shard_distributor_shard_assign_no_active_executors", metricType: Counter},
 	},
 }
